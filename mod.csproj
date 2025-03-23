@@ -1,0 +1,291 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProjectGuid>{B07BDC3C-3770-4A07-90D8-5C2A68E2172B}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>HatsPlusPlus</RootNamespace>
+    <AssemblyName>HatsPlusPlus2</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>.\</OutputPath>
+    <BaseIntermediateOutputPath>build\obj</BaseIntermediateOutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>.\</OutputPath>
+    <BaseIntermediateOutputPath>build\obj</BaseIntermediateOutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>.\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <LangVersion>12.0</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>false</Optimize>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>12.0</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony, Version=2.3.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>content\DLLs\Harmony\0Harmony.dll</HintPath>
+    </Reference>
+    <Reference Include="DuckGame">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Duck Game\DuckGame.exe</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="LanguageExt.Core, Version=4.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\LanguageExt.Core.4.4.9\lib\netstandard2.0\LanguageExt.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\Microsoft.Bcl.AsyncInterfaces.7.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Xna.Framework, Version=4.0.0.0, Culture=neutral, PublicKeyToken=842cf8be1de50553, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Windows\Microsoft.NET\assembly\GAC_32\Microsoft.Xna.Framework\v4.0_4.0.0.0__842cf8be1de50553\Microsoft.Xna.Framework.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Xna.Framework.Game, Version=4.0.0.0, Culture=neutral, PublicKeyToken=842cf8be1de50553, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Windows\Microsoft.NET\assembly\GAC_32\Microsoft.Xna.Framework.Game\v4.0_4.0.0.0__842cf8be1de50553\Microsoft.Xna.Framework.Game.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Xna.Framework.Graphics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=842cf8be1de50553, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Windows\Microsoft.NET\assembly\GAC_32\Microsoft.Xna.Framework.Graphics\v4.0_4.0.0.0__842cf8be1de50553\Microsoft.Xna.Framework.Graphics.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="MoonSharp.Interpreter, Version=2.0.0.0, Culture=neutral, PublicKeyToken=921e73ce94aa17f8, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>content\DLLs\MoonSharp.Interpreter.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>content\DLLs\Json.NET\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="OneOf">
+      <HintPath>content\DLLs\OneOf.dll</HintPath>
+    </Reference>
+    <Reference Include="StbImageSharp">
+      <HintPath>content\DLLs\StbImageSharp\StbImageSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="StbImageWriteSharp">
+      <HintPath>content\DLLs\StbImageWriteSharp\StbImageWriteSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Drawing.Common, Version=9.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Drawing.Common.9.0.1\lib\net462\System.Drawing.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Linq, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Linq.4.3.0\lib\net463\System.Linq.dll</HintPath>
+      <Private>True</Private>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Linq.Queryable" />
+    <Reference Include="System.Memory, Version=4.0.1.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Memory.4.5.5\lib\net461\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="FindFirstTeamSlot.cs" />
+    <Compile Include="HatSprite.cs" />
+    <Compile Include="LuaLogger.cs" />
+    <Compile Include="LuaUtils.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <Compile Include="src\Animation.cs" />
+    <Compile Include="src\BufferingTest.cs" />
+    <Compile Include="src\Constants.cs" />
+    <Compile Include="src\Coroutines.cs" />
+    <Compile Include="src\DGImGui\DGImGui.cs" />
+    <Compile Include="src\DGImGui\MonoGame.ImGuiNet\DrawVertDeclaration.cs" />
+    <Compile Include="src\DGImGui\MonoGame.ImGuiNet\ImGuiRenderer.cs" />
+    <Compile Include="src\DGImGui\MonoGame.ImGuiNet\Utils\FilePicker.cs" />
+    <Compile Include="src\Bitmap.cs" />
+    <Compile Include="src\Extenstions.cs" />
+    <Compile Include="src\GlobalUsings.cs" />
+    <Compile Include="src\Hats.cs" />
+    <Compile Include="src\TeamSlots.cs" />
+    <Compile Include="src\Index.cs" />
+    <Compile Include="src\Parsing\HatsData.cs" />
+    <Compile Include="src\HatsPlusPlus2.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Delegates.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImColor.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImDrawChannel.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImDrawCmd.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImDrawCmdHeader.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImDrawData.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImDrawFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImDrawList.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImDrawListFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImDrawListSplitter.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImDrawVert.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImFont.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImFontAtlas.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImFontAtlasCustomRect.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImFontAtlasFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImFontConfig.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImFontGlyph.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImFontGlyphRangesBuilder.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGui.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiBackendFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiButtonFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiChildFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiCol.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiColorEditFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiComboFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiCond.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiConfigFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiDataType.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiDir.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiDockNodeFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiDragDropFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiFocusedFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiHoveredFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiInputFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiInputTextCallbackData.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiInputTextFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiIO.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiItemFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiKey.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiKeyData.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiListClipper.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiMouseButton.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiMouseCursor.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiMouseSource.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiMultiSelectFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiMultiSelectIO.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiNative.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiOnceUponAFrame.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiPayload.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiPlatformImeData.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiPlatformIO.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiPlatformMonitor.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiPopupFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiSelectableFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiSelectionBasicStorage.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiSelectionExternalStorage.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiSelectionRequest.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiSelectionRequestType.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiSizeCallbackData.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiSliderFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiSortDirection.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiStorage.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiStyle.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiStyleVar.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTabBarFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTabItemFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTableBgTarget.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTableColumnFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTableColumnSortSpecs.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTableFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTableRowFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTableSortSpecs.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTextBuffer.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTextFilter.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTextRange.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiTreeNodeFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiViewport.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiViewportFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiWindowClass.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\ImGuiWindowFlags.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\StbTexteditRow.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\StbUndoRecord.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\StbUndoState.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Generated\STB_TexteditState.gen.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\ImGui.Manual.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\ImGui.Manual.ReadOnlySpan.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\ImGuiModFlags.Manual.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\ImGuiNative.Manual.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\ImGuiSizeCallback.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\ImGuiTextEditCallback.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\ImVector.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\NullTerminatedString.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Pair.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\RangeAccessor.cs" />
+    <Compile Include="src\DGImGui\ImGuiNET\Util.cs" />
+    <Compile Include="src\Patches\Imgui.cs" />
+    <Compile Include="src\IVector2.cs" />
+    <Compile Include="src\Updater.cs" />
+    <Compile Include="TeamsSender.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
