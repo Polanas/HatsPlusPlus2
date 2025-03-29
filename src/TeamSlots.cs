@@ -1,12 +1,50 @@
-﻿using System;
+﻿using MoonSharp.Interpreter;
+using MoonSharp.Interpreter.Interop;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace HatsPlusPlus; 
 
-public record struct TeamId(uint Id);
-public record struct TeamGeneration(uint Value);
-public record struct TeamHandle(TeamGeneration Gen, TeamId TeamId);
+[MoonSharpUserData]
+public record struct TeamId {
+    [MoonSharpVisible(true)]
+    public uint value;
+
+    public static TeamId New(uint value) {
+        return new TeamId {
+            value = value
+        };
+    }
+}
+
+[MoonSharpUserData]
+public record struct TeamGen {
+    [MoonSharpVisible(true)]
+    public uint value;
+
+    public static TeamGen New(uint value) {
+        return new TeamGen {
+            value = value
+        };
+    }
+}
+
+[MoonSharpUserData]
+public record struct TeamHandle {
+    [MoonSharpVisible(true)]
+    public TeamGen gen;
+    [MoonSharpVisible(true)]
+    public TeamId id;
+
+    public static TeamHandle New(TeamGen gen, TeamId id) {
+        return new TeamHandle {
+            gen = gen,
+            id = id,
+        };
+    }
+}
+//public record struct TeamHandle(TeamGeneration Gen, TeamId TeamId);
 public record struct TeamRecord(TeamHandle Handle);
 
 public class TeamSlots {
@@ -24,12 +62,12 @@ public class TeamSlots {
     TeamHandle NewTeamHandle() {
         if (recycledHandles.Count > 0) {
             var recycledHandle = recycledHandles.Dequeue();
-            recycledHandle.Gen = new TeamGeneration(recycledHandle.Gen.Value + 1);
+            recycledHandle.gen = TeamGen.New(recycledHandle.gen.value + 1);
             return recycledHandle;
         }
 
-        this.length += 1;
-        return new TeamHandle(new TeamGeneration(0), new TeamId(this.length - 1));
+        length += 1;
+        return TeamHandle.New(TeamGen.New(0), TeamId.New(length - 1));
     }
 
     public Option<TeamHandle> AddTeam() {
@@ -38,7 +76,7 @@ public class TeamSlots {
         }
 
         var newHanlde = NewTeamHandle();
-        Slots[newHanlde.TeamId.Id] = Some(new TeamRecord(newHanlde));
+        Slots[newHanlde.id.value] = Some(new TeamRecord(newHanlde));
         return newHanlde;
     }
 
@@ -48,11 +86,11 @@ public class TeamSlots {
         }
 
         recycledHandles.Enqueue(handle);
-        Slots[handle.TeamId.Id] = None;
+        Slots[handle.id.value] = None;
     }
 
     public bool IsHandleValid(TeamHandle handle) {
-        return Slots[handle.TeamId.Id].Map((record) => record.Handle == handle).IfNone(false);
+        return Slots[handle.id.value].Map((record) => record.Handle == handle).IfNone(false);
     }
 
     public Option<int> GetSlotId(TeamHandle handle) {
@@ -60,6 +98,6 @@ public class TeamSlots {
             return None;
         }
 
-        return (int)handle.TeamId.Id;
+        return (int)handle.id.value;
     }
 }

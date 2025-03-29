@@ -1,11 +1,13 @@
 ﻿using DuckGame;
 using DuckGame.CustomStuffHack.DGImGui;
+using HatsPlusPlus.Parsing;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MoonSharp.Interpreter;
 using MoonSharp.Interpreter.Interop.LuaStateInterop;
 using MoonSharp.Interpreter.Loaders;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -55,6 +57,7 @@ public class HatsPlusPlus2 : DisabledMod {
         harmony.PatchAll();
 
         TeamsStorage.Init();
+        TeamsSender.Init();
         Hats.Init();
         DGImGui.Initialize();
         var updater = Updater.New();
@@ -64,35 +67,16 @@ public class HatsPlusPlus2 : DisabledMod {
         (typeof(Game).GetField("drawableComponents", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic).GetValue(MonoMain.instance) as List<IDrawable>).Add(new ModDraw());
 
 
-        //make sure LanguageExt is loaded early to prevent lag spike
+        //make sure libs is loaded early to prevent lag spikes
         {
             var sprite = HatSprite.New();
-            sprite.AddAnim(Animation.New(AnimType.OnDefault, 1f, true, "normal", []));
-            sprite.AddAnim(Animation.New(AnimType.OnDefault, 1f, true, "rev", []));
-            sprite.SetAnim("normal");
+            sprite.addAnim(Animation.New("normal", 1f, true, []));
+            sprite.addAnim(Animation.New("rev", 1f, true, []));
+            sprite.setAnim("normal");
+
+            var script = new MoonSharp.Interpreter.Script();
+            script.DoString("print('hello there')");
         }
-
-        var script = new MoonSharp.Interpreter.Script();
-        script.Options.ScriptLoader = new FileSystemScriptLoader();
-        (script.Options.ScriptLoader as ScriptLoaderBase).ModulePaths = [Path.Combine(GetPath<HatsPlusPlus2>("LuaScripts"), "?.lua")];
-        static DynValue MyFunction(ScriptExecutionContext ctx, CallbackArguments args) {
-            var arguments = args.GetArray();
-            var script = ctx.GetScript();
-            StringBuilder log = new StringBuilder();
-            foreach (var arg in arguments) {
-                var argString = script.Call(script.Globals["tostring"], arg).String;
-                log.Append(argString);
-                log.Append("\t");
-            }
-
-            LuaLogger.Log(log.ToString());
-
-            return DynValue.Nil;
-        }
-        MoonSharp.Interpreter.Script.GlobalOptions.CustomConverters.SetClrToScriptCustomConversion<Vec2>((script, vec) => DynValue.NewNumber(420));
-        script.Globals["print"] = DynValue.NewCallback(MyFunction);
-        script.Globals["test"] = new Vec2(20);
-        script.DoString("print(test)");
     }
 }
 

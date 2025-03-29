@@ -23,7 +23,7 @@ public static class LuaLogger {
     public static void Show() {
         ImGui.Begin("Logs");
         foreach (var log in logs) {
-            ImGui.Text(log);
+            ImGui.TextWrapped(log);
         }
         ImGui.End();
     }

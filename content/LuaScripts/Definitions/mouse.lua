@@ -1,0 +1,13 @@
+---@meta
+---@class mouse
+---@field positionScreen vec2
+---@field left inputState
+---@field right inputState
+---@field middle inputState
+---@field scroll number
+---@field prevScrollDown number
+---@field prevScrollUp number
+---@field position vec2
+---@field mousePos vec2
+---@field positionConsole vec2
+mouse = {}

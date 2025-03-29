@@ -132,6 +132,7 @@
     <Reference Include="System.Numerics.Vectors, Version=4.1.4.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>packages\System.Numerics.Vectors.4.5.0\lib\net46\System.Numerics.Vectors.dll</HintPath>
     </Reference>
+    <Reference Include="System.Reflection" />
     <Reference Include="System.Runtime" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
@@ -148,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FindFirstTeamSlot.cs" />
+    <Compile Include="HatsManager.cs" />
     <Compile Include="HatSprite.cs" />
     <Compile Include="LuaLogger.cs" />
     <Compile Include="LuaUtils.cs" />
@@ -165,9 +167,12 @@
     <Compile Include="src\DGImGui\MonoGame.ImGuiNet\ImGuiRenderer.cs" />
     <Compile Include="src\DGImGui\MonoGame.ImGuiNet\Utils\FilePicker.cs" />
     <Compile Include="src\Bitmap.cs" />
+    <Compile Include="src\Ducks.cs" />
     <Compile Include="src\Extenstions.cs" />
     <Compile Include="src\GlobalUsings.cs" />
     <Compile Include="src\Hats.cs" />
+    <Compile Include="src\ScriptExtensions.cs" />
+    <Compile Include="src\Teams.cs" />
     <Compile Include="src\TeamSlots.cs" />
     <Compile Include="src\Index.cs" />
     <Compile Include="src\Parsing\HatsData.cs" />
@@ -273,6 +278,7 @@
     <Compile Include="TeamsSender.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include=".editorconfig" />
     <None Include="app.config" />
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">

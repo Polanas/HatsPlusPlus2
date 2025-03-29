@@ -1,0 +1,20 @@
+{
+    "elements": [
+      {
+        "Wearable": {
+          "base": {
+            "hat_type": "Wearable",
+            "frame_size": [
+              32,
+              32
+            ],
+            "local_image_path": "images/stuff2/preview.png",
+            "local_script_path": null
+          },
+          "strapped_on": false,
+          "animations": []
+        }
+      }
+    ],
+    "name": "MyHat"
+  }

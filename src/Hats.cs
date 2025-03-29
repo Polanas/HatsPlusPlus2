@@ -1,22 +1,26 @@
 ﻿using Coroutines;
 using DuckGame;
+using HatsPlusPlus.Parsing;
 using ImGuiNET;
 using LanguageExt.SomeHelp;
 using LanguageExt.UnsafeValueAccess;
 using Microsoft.Xna.Framework;
 using MoonSharp.Interpreter;
+using MoonSharp.Interpreter.Interop;
 using MoonSharp.Interpreter.Interop.LuaStateInterop;
 using System;
 using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
+using Script = MoonSharp.Interpreter.Script;
 
 namespace HatsPlusPlus;
 
@@ -50,243 +54,32 @@ public struct TeamData {
     public Bitmap image;
 }
 
-public record struct TeamFrame(List<TeamHandle> TeamHandles);
 
+[MoonSharpUserData]
+public struct TeamFrame {
+    [MoonSharpVisible(true)]
+    public List<TeamHandle> teamHandles;
+
+    public static TeamFrame New(List<TeamHandle> handles) {
+        return new TeamFrame {
+            teamHandles = handles
+        };
+    }
+}
+
+[MoonSharpUserData]
 public struct TeamsBitmap {
+    [MoonSharpVisible(true)]
     public IVector2 frameSize;
+    [MoonSharpVisible(true)]
     public List<TeamFrame> frames;
     /// <summary>
     /// Indicates that frames are bigger than 32x32 (=each frame consists of multiple teams)
     /// </summary>
+    [MoonSharpVisible(true)]
     public bool isBig;
 }
 
-public static class TeamsStorage {
-    public static TeamSlots slots;
-    public static Dictionary<TeamHandle, TeamData> loadedTeams;
-
-    public static void Init() {
-        slots = TeamSlots.New();
-        loadedTeams = [];
-    }
-
-    public static Option<TeamData> GetTeamData(TeamHandle handle) {
-        if (loadedTeams.TryGetValue(handle, out var data)) {
-            return Some(data);
-        }
-        return None;
-    }
-
-    public static Either<TeamsBitmap, string> LoadBitmap(Bitmap bitmap, IVector2 frameSize) {
-        var bitmaps = ChopBitmap(bitmap, frameSize);
-        var teams = new List<List<(Team, Bitmap)>>();
-        bool isBig = false;
-        foreach (var frame in bitmaps) {
-            var frame_teams = new List<(Team, Bitmap)>();
-            foreach (var framePart in frame) {
-                if (framePart.Width > Constants.MIN_DG_HAT_SIZE || framePart.Width > Constants.MIN_DG_HAT_SIZE) {
-                    isBig = true;
-                }
-
-                var team = BitmapToTeam(framePart, "TODO");
-                if (team.IsRight) {
-                    return team.UnwrapErr();
-                }
-
-                frame_teams.Add((team.UnwrapOk(), framePart));
-            }
-
-            teams.Add(frame_teams);
-        }
-
-        var teamFrames = new List<TeamFrame>();
-        foreach (var teamFrame in teams) {
-            var handles = new List<TeamHandle>();
-            foreach (var (team, map) in teamFrame) {
-                var handle = AddTeam(team, map);
-                if (handle.IsNone) {
-                    return "could not add team: team limit exceeded";
-                }
-                handles.Add(handle.Unwrap());
-            }
-            teamFrames.Add(new TeamFrame(handles));
-        }
-        return new TeamsBitmap {
-            isBig = isBig,
-            frames = teamFrames,
-            frameSize = frameSize
-        };
-    }
-
-    public static List<List<Bitmap>> ChopBitmap(Bitmap bitmap, IVector2 frameSize) {
-        var framesAmountX = (int)Math.Floor((float)bitmap.Width / (float)frameSize.X);
-        var framesAmountY = (int)Math.Floor((float)bitmap.Height / (float)frameSize.Y);
-
-        var frames = new List<Bitmap>();
-        for (int y = 0; y < framesAmountY; y++) {
-            for (int x = 0; x < framesAmountX; x++) {
-                var pos = new IVector2(x,y);
-                var frame = bitmap.ClonePart(pos * frameSize, frameSize);
-                frames.Add(frame);
-            }
-        }
-
-        var chopedFrames = new List<List<Bitmap>>();
-        int id = 0;
-        foreach (var frame in frames) {
-            List<Bitmap> currentFrame = null;
-            if (frame.Width > Constants.MIN_DG_HAT_SIZE || frame.Height > Constants.MIN_DG_HAT_SIZE) {
-                currentFrame = ChopBitmapFrame(frame);
-                id++;
-            } else {
-                currentFrame = [frame];
-            }
-            chopedFrames.Add(currentFrame);
-        }
-
-        return chopedFrames;
-    }
-    public static List<Bitmap> ChopBitmapFrameSimple(Bitmap frame) {
-        var frameSize = new IVector2(Constants.MIN_FRAME_SZIE);
-        var partsAmountX = (int)Math.Ceiling((float)frame.Width / (float)frameSize.X);
-        var partsAmountY = (int)Math.Ceiling((float)frame.Height / (float)frameSize.Y);
-        var gapsAmountX = partsAmountX - 1;
-        var gapsAmountY = partsAmountY - 1;
-        var sizeX = frame.Width + gapsAmountX;
-        var sizeY = frame.Height + gapsAmountY;
-
-        var frames = new List<Bitmap>();
-        for (int y = 0; y < partsAmountY; y++) {
-            for (int x = 0; x < partsAmountX; x++) {
-                var pos = new IVector2(x, y);
-                var framePart = frame.ClonePart(pos * frameSize, frameSize);
-                var framePartExtended = Bitmap.Empty(frameSize.X, frameSize.Y);
-                framePartExtended.Draw(framePart, IVector2.Zero);
-                frames.Add(framePartExtended);
-            }
-        }
-        return frames;
-    }
-
-    public static List<Bitmap> ChopBitmapFrame(Bitmap frame) {
-        var frameSize = new IVector2(Constants.MIN_FRAME_SZIE);
-        var partsAmountX = (int)Math.Ceiling((float)frame.Width / (float)frameSize.X);
-        var partsAmountY = (int)Math.Ceiling((float)frame.Height / (float)frameSize.Y);
-        var gapsAmountX = partsAmountX - 1;
-        var gapsAmountY = partsAmountY - 1;
-        var sizeX = frame.Width + gapsAmountX;
-        var sizeY = frame.Height + gapsAmountY;
-
-        var frameWithGaps = Bitmap.Empty(sizeX, sizeY);
-
-        for (int y = 0; y < partsAmountY; y++) {
-            for (int x = 0; x < partsAmountX; x++) {
-                var pos = new IVector2(x, y);
-                var framePart = frame.ClonePart(pos * frameSize, frameSize);
-                var framePartExtended = Bitmap.Empty(frameSize.X, frameSize.Y);
-                framePartExtended.Draw(framePart, IVector2.Zero);
-                frameWithGaps.Draw(framePartExtended, pos * frameSize + pos);
-            }
-        }
-
-        for (int gapId = 0; gapId < gapsAmountX; gapId++) {
-            var x = (gapId + 1) * frameSize.X + gapId;
-
-            for (int y = 0; y < frameWithGaps.Height; y++) {
-                var rightPixel = frameWithGaps.GetPixel(new IVector2(x - 1, y)).Unwrap();
-                if (rightPixel.a == 255) {
-                    frameWithGaps.SetPixel(new IVector2(x, y), rightPixel);
-                }
-            }
-        }
-
-        for (int gapId = 0; gapId < gapsAmountY; gapId++) {
-            var y = (gapId + 1) * frameSize.Y + gapId;
-            for (int x = 0; x < frameWithGaps.Width; x++) {
-                var topPixel = frameWithGaps.GetPixel(new IVector2(x, y - 1)).Unwrap();
-                if (topPixel.a == 255) {
-                    frameWithGaps.SetPixel(new IVector2(x, y), topPixel);
-                }
-            }
-        }
-
-        var frames = new List<Bitmap>();
-        for (int y = 0; y < partsAmountY; y++) {
-            for (int x = 0; x < partsAmountX; x++) {
-                var bitmap = frameWithGaps.ClonePart(new IVector2(x, y) * frameSize, frameSize);
-                frames.Add(bitmap);
-            }
-        }
-
-        return frames;
-    }
-
-    public static Either<Team, string> BitmapToTeam(Bitmap bitmap, string teamName) {
-        if (bitmap.Width < Constants.MIN_DG_HAT_SIZE || bitmap.Height < Constants.MIN_DG_HAT_SIZE) {
-            return Right("expected bitmap size to be at least 32x32");
-        }
-        if (bitmap.Width > Constants.MAX_DG_HAT_SIZE.X || bitmap.Height > Constants.MAX_DG_HAT_SIZE.Y) {
-            return Right($"expected bitmap size to be {Constants.MAX_DG_HAT_SIZE} max");
-        }
-
-        var systemBitmap = new System.Drawing.Bitmap(bitmap.Width, bitmap.Height);
-        for (int x = 0; x < bitmap.Width; x++) {
-            for (int y = 0; y < bitmap.Height; y++) {
-                var pixel = bitmap.GetPixel(IVector2.New(x, y)).Unwrap();
-                systemBitmap.SetPixel(x, y, System.Drawing.Color.FromArgb(pixel.a, pixel.r, pixel.g, pixel.b));
-            }
-        }
-
-        var data = (byte[])new ImageConverter().ConvertTo(systemBitmap, typeof(byte[]));
-        return Team.DeserializeFromPNG(data, teamName, bitmap.Path.IfNone(static () => ""));
-    }
-
-    public static Option<TeamHandle> AddTeam(Team team, Bitmap image) {
-        if (TeamAlreadyLoaded(image, out var existingTeam)) {
-            return existingTeam.Unwrap().handle;
-        }
-
-        var handle = slots.AddTeam();
-        if (handle.IsNone) {
-            return None;
-        }
-
-        var handleValue = handle.Unwrap();
-        loadedTeams.Add(handleValue, new TeamData {
-            handle = handleValue,
-            //clone to make sure that the bitmap stays intact
-            image = image.Clone(),
-            team = team,
-        });
-
-        Teams.AddExtraTeam(team);
-
-        return handleValue;
-    }
-
-    public static bool TeamAlreadyLoaded(Bitmap image, out Option<TeamData> existingTeam) {
-        foreach (var teamData in loadedTeams.Values) {
-            var other = teamData.image;
-            if (other.IsEqualTo(image)) {
-                existingTeam = teamData;
-                return true;
-            }
-        }
-        existingTeam = None;
-        return false;
-    }
-
-    public static void RemoveTeam(TeamHandle handle) {
-        if (!loadedTeams.TryGetValue(handle, out var teamData)) {
-            return;
-        }
-
-        Teams.core.extraTeams.Remove(teamData.team);
-
-        slots.RemoveTeam(handle);
-        loadedTeams.Remove(handle);
-    }
-}
 
 public abstract class AbstractHat {
     public Vec2 position;
@@ -298,14 +91,19 @@ public abstract class AbstractHat {
     public HatSprite sprite;
 
 
-    public abstract HatId Id();
+    public abstract HatId GetId();
     public abstract void Remove();
-    public abstract void Init();
-    public abstract void Update(GameTime gameTime, Option<DynValue> luaState);
+    public abstract void Init(Option<DynValue> luaState);
+    public abstract void Update(GameTime gameTime);
+    public abstract void Draw(GameTime gameTime);
+
+    public bool IsAlive() {
+        return Hats.IsAlive(GetId());
+    }
 }
 
 public enum DepthHatState {
-    Regular,
+    Regular = 1,
     Depth, 
     DepthInactive
 }
@@ -314,56 +112,6 @@ public enum InnerDepthHatState {
     None,
     ToRegular,
     ToDepthInactive,
-}
-
-public static class BoolExtensions {
-    /// <summary>
-    /// Returns Some(t) if the bool is true, or None otherwise.
-    /// </summary>
-    public static Option<T> Then<T>(this bool boolean, T t) {
-        if (boolean) {
-            return t;
-        }
-        return None;
-    }
-
-
-    /// <summary>
-    /// Returns Some(func()) if the bool is true, or None otherwise.
-    /// </summary>
-    public static Option<T> ThenSome<T>(this bool boolean, Func<T> func) {
-        if (boolean) {
-            return func();
-        }
-        return None;
-    }
-}
-
-public static class ListExtensions {
-    public static Option<T> Get<T>(this List<T> list, int index) {
-        return (index >= list.Length()).ThenSome(() => list[index]);
-    }
-}
-
-public static class OptionExtensions {
-    public static Option<U> AndThen<T, U>(this Option<T> self, Func<T, Option<U>> func) {
-        return self.Match(
-            (value) => func(value),
-            () => None
-        );
-    }
-
-    public static T ValueOr<T>(this Option<T> self, T value) {
-        return self.Match(
-            (value) => value,
-            () => value);
-    }
-
-    public static T ValueOrElse<T>(this Option<T> self, Func<T> func) {
-        return self.Match(
-            (value) => value,
-            () => func());
-    }
 }
 
 static class Functions {
@@ -472,27 +220,49 @@ public enum NewAnim {
 
 public class ScriptableHat : AbstractHat {
     HatId id;
+    public Option<DynValue> luaState;
 
     public static ScriptableHat New() {
         return new ScriptableHat {
-            id = HatId.New()
+            id = Hats.NewHatId()
         };
     }
 
-    public override HatId Id() {
+    public override HatId GetId() {
         return id;
     }
 
-    public override void Init() {
-
+    public override void Init(Option<DynValue> luaState) {
+        this.luaState = luaState;
+        var value = luaState.Unwrap();
+        //TryCall("init");
     }
 
     public override void Remove() {
-
+        TryCall("remove");
     }
 
-    public override void Update(GameTime gameTime, Option<DynValue> luaState) {
+    void TryCall(string functionName, params object[] args) {
+        try {
 
+            if (luaState.ValueUnsafe() is var state && luaState.IsSome) {
+                var functionTable = state.Table.Get(functionName);
+                if (functionTable.Function is var fn && fn is not null) {
+                    fn.Call(args);
+                }
+            }
+        }
+        catch (ScriptRuntimeException e) {
+            LuaLogger.Log($"Error: {e.DecoratedMessage ?? e.Message}");
+        }
+    }
+
+    public override void Update(GameTime gameTime) {
+        TryCall("update", gameTime);
+    }
+
+    public override void Draw(GameTime gameTime) {
+        TryCall("draw", gameTime);
     }
 }
 
@@ -511,10 +281,14 @@ public class DepthAnimHat: AbstractHat {
     Option<CoroutineHandle> changeAnimHandler;
     bool firstAnimSet;
     HatId id;
+    int previousFrameId = -1;
 
     static Vec2 OFF_SCREEN_POS = new Vec2(0, -10_000);
 
-    public override HatId Id() {
+    public override void Draw(GameTime gameTime) {
+    }
+
+    public override HatId GetId() {
         return id;
     }
 
@@ -524,7 +298,7 @@ public class DepthAnimHat: AbstractHat {
         }
     }
 
-    public override void Init() {
+    public override void Init(Option<DynValue> luaState) {
         var hats = new DepthHat[] {
             Hats.Add(DepthHat.New(teamsBitmap, rock)) as DepthHat,
             Hats.Add(DepthHat.New(teamsBitmap, rock)) as DepthHat,
@@ -537,12 +311,11 @@ public class DepthAnimHat: AbstractHat {
         this.hats = hats;
     }
 
-    public static DepthAnimHat New(TeamsBitmap teamsBitmap, ScoreRock rock) {
+    public static DepthAnimHat New(TeamsBitmap teamsBitmap, Option<ScoreRock> rockOption) {
         var hatsAmountX = (int)Math.Ceiling((float)teamsBitmap.frameSize.X / (float)Constants.MIN_DG_HAT_SIZE);
         var hatsAmountY = (int)Math.Ceiling((float)teamsBitmap.frameSize.Y / (float)Constants.MIN_DG_HAT_SIZE);
         var hatsAmount = new IVector2(hatsAmountX, hatsAmountY);
         var (normalIndices, horizontalIndices) = Functions.GetIndices(hatsAmount);
-
 
         var hat = new DepthAnimHat {
             teamsBitmap = teamsBitmap,
@@ -550,16 +323,39 @@ public class DepthAnimHat: AbstractHat {
             hatsAmount = hatsAmount,
             normalIndices = normalIndices,
             horizIndices = horizontalIndices,
-            rock = rock,
+            rock = rockOption.ValueOrElse(() => {
+                var rock = new ScoreRock(0, 0, DuckNetwork.localProfile ?? Profiles.DefaultPlayer1);
+                Level.Add(rock);
+                return rock;
+            }),
             hats = null,
             coroutines = new CoroutineRunner(),
-            id = HatId.New(),
+            id = Hats.NewHatId()
         };
 
         return hat;
     }
 
     IEnumerator ChangeFrame(NewAnim newAnim = NewAnim.No) {
+        //so we don't waste time changing frames if it's the same one
+        if (sprite.currentFrameId == previousFrameId) {
+            yield break;
+        }
+        if (hats[0].State == hats[1].State && hats[0].State == DepthHatState.Regular) {
+            var hat1 = hats[0];
+            var hat2 = hats[1];
+
+            hat1.SetState(DepthHatState.Depth);
+            hat1.sprite.forceCurrentFrame = sprite.nextFrame().Map((f) => f.value).ValueOr(sprite.currentFrameId);
+            hat2.SetState(DepthHatState.Depth);
+            hat2.sprite.forceCurrentFrame = sprite.CurrentFrame.value;
+            yield return null;
+
+            hat2.SetState(DepthHatState.DepthInactive);
+            shownHat = hat2;
+            firstAnimSet = true;
+            yield break;
+        }
         if (!((hats[0].State == DepthHatState.DepthInactive && hats[1].State == DepthHatState.Depth) || (
             hats[0].State == DepthHatState.Depth && hats[1].State == DepthHatState.DepthInactive))) {
             throw new Exception("expected hat state to be: 1 Depth, 1 DepthInactive");
@@ -567,27 +363,19 @@ public class DepthAnimHat: AbstractHat {
 
         var depthHat = FindHatWith(DepthHatState.Depth).Unwrap();
         depthHat.SetState(DepthHatState.DepthInactive);
-        depthHat.sprite.forceCurrentFrame = sprite.CurrentAnim().Map((a) => a.frames[sprite.currentFrameId]).Unwrap();
+        depthHat.sprite.forceCurrentFrame = sprite.CurrentFrame.value;
         var oldShownHat = SwapShownHat(depthHat);
         changeFrameState = ChangeFrameState.Frame1;
         yield return null;
 
-        if (newAnim == NewAnim.No && sprite.AnimChanged) {
-            //cancelChangingFrame = true;
-            //forceChangeFrame = true;
-            //var notShownHat = hats.Find((h) => h != shownHat).Unwrap();
-            //notShownHat.SetState(DepthHatState.Depth);
-            //notShownHat.sprite.forceCurrentFrame = sprite.CurrentAnim().Unwrap().frames[0];
-            //yield break;
-        }
-
         oldShownHat.SetState(DepthHatState.Depth);
-        oldShownHat.sprite.forceCurrentFrame = sprite.NextFrame().Unwrap();
+        oldShownHat.sprite.forceCurrentFrame = sprite.nextFrame().Map((f) => f.value).ValueOr(sprite.currentFrameId);
 
         changeFrameState = ChangeFrameState.Frame2;
         yield return null;
 
         changeFrameState = ChangeFrameState.None;
+        previousFrameId = sprite.currentFrameId;
     }
 
     IEnumerator ChangeAnim() {
@@ -596,9 +384,9 @@ public class DepthAnimHat: AbstractHat {
             var hat2 = hats[1];
 
             hat1.SetState(DepthHatState.Depth);
-            hat1.sprite.forceCurrentFrame = sprite.NextFrame().Unwrap();
+            hat1.sprite.forceCurrentFrame = sprite.nextFrame().Map((f) => f.value).ValueOr(sprite.currentFrameId);
             hat2.SetState(DepthHatState.Depth);
-            hat2.sprite.forceCurrentFrame = sprite.CurrentAnim().Unwrap().frames[sprite.currentFrameId];
+            hat2.sprite.forceCurrentFrame = sprite.CurrentFrame.value;
             yield return null;
 
             hat2.SetState(DepthHatState.DepthInactive);
@@ -607,10 +395,11 @@ public class DepthAnimHat: AbstractHat {
             yield break;
         }
         if (changeFrameState == ChangeFrameState.Frame1) {
+            previousFrameId = sprite.currentFrameId;
             changeFrameState = ChangeFrameState.None;
             var notShownHat = hats.Find((h) => h != shownHat).Unwrap();
             notShownHat.SetState(DepthHatState.Depth);
-            notShownHat.sprite.forceCurrentFrame = sprite.CurrentAnim().Unwrap().frames[sprite.currentFrameId];
+            notShownHat.sprite.forceCurrentFrame = sprite.CurrentFrame.value;
             yield return null;
 
             yield return ChangeFrame(NewAnim.Yes);
@@ -619,7 +408,7 @@ public class DepthAnimHat: AbstractHat {
 
         var depthHat = FindHatWith(DepthHatState.Depth).Unwrap(); 
         var depthInactiveHat = FindHatWith(DepthHatState.DepthInactive).Unwrap();
-        depthHat.sprite.forceCurrentFrame = sprite.CurrentAnim().Unwrap().frames[sprite.currentFrameId];
+        depthHat.sprite.forceCurrentFrame = sprite.CurrentFrame.value;
         yield return null;
 
         yield return ChangeFrame(NewAnim.Yes);
@@ -633,8 +422,8 @@ public class DepthAnimHat: AbstractHat {
         return oldShownHat;
     }
 
-    public override void Update(GameTime gameTime, Option<DynValue> luaState) {
-        if (sprite.AnimChanged) {
+    public override void Update(GameTime gameTime) {
+        if (sprite.AnimChanged || sprite.ForceFrameChanged) {
             if (changeFrameState == ChangeFrameState.Frame1) {
                 if (changeFrameHandler.Value() is var change_handler && this.changeFrameHandler.IsSome) {
                     coroutines.Stop(change_handler);
@@ -643,6 +432,9 @@ public class DepthAnimHat: AbstractHat {
             }
             changeAnimHandler = coroutines.Run(ChangeAnim());
         } else if (sprite.FrameChanged && changeAnimHandler.Map((h) => !coroutines.IsRunning(h)).ValueOr(true)) {
+            changeFrameHandler = coroutines.Run(ChangeFrame());
+        }
+        if (Keyboard.Pressed(Keys.O)) {
             changeFrameHandler = coroutines.Run(ChangeFrame());
         }
 
@@ -654,12 +446,12 @@ public class DepthAnimHat: AbstractHat {
         }
 
         foreach (var hat in hats) {
+            hat.depth = depth;
             if (this.shownHat.Map((h) => h != hat).ValueOr(true)) {
                 hat.position = OFF_SCREEN_POS;
             }
-            hat.depth = depth;
         }
-        sprite.Update(gameTime);
+        sprite.update(gameTime);
     }
 
     public Option<DepthHat> FindHatWith(DepthHatState state) {
@@ -672,6 +464,109 @@ public class DepthAnimHat: AbstractHat {
     }
 }
 
+public class VanillaHat: AbstractHat {
+    public TeamHat hat;
+    HatId id;
+
+    public static VanillaHat New(TeamsBitmap bitmap) {
+        var hat = new TeamHat(0, 0, null);
+        Level.Add(hat);
+
+        return new VanillaHat {
+            id = Hats.NewHatId(),
+            hat = hat,
+            teamsBitmap = bitmap,
+            sprite = HatSprite.New(),
+        };
+    }
+
+    public override void Draw(GameTime gameTime) {
+
+    }
+
+    public override HatId GetId() {
+        return id;
+    }
+
+    public override void Init(Option<DynValue> luaState) {
+    }
+
+    public override void Remove() {
+        Level.Remove(hat);
+    }
+
+    public override void Update(GameTime gameTime) {
+        sprite.update(gameTime);
+        var currentFrame = sprite.CurrentFrame;
+        var teamFrame = teamsBitmap.frames[currentFrame.value].teamHandles;
+        var teamData = TeamsStorage.GetTeamData(teamFrame[0]);
+        teamData.IfSome((data) => hat.team = data.team);
+    }
+}
+
+public class WearableHat : AbstractHat {
+    public HatId id;
+    public WearableHatData hatData;
+    public Option<DynValue> luaState;
+    public Script script;
+    public AbstractHat hat;
+
+    void TryCall(string functionName, params object[] args) {
+        try {
+
+            if (luaState.ValueUnsafe() is var state && luaState.IsSome) {
+                var functionTable = state.Table.Get(functionName);
+                if (functionTable.Function is var fn && fn is not null) {
+                    fn.Call(args);
+                }
+            }
+        }
+        catch (ScriptRuntimeException e) {
+            LuaLogger.Log($"Error: {e.DecoratedMessage ?? e.Message}");
+        }
+    }
+
+    public static WearableHat New(Script script,TeamsBitmap bitmap, WearableHatData data) {
+        AbstractHat hat;
+        if (data.baseData.frameSize[0] <= 32 && data.baseData.frameSize[1] <= 32) {
+            hat = VanillaHat.New(bitmap);
+            Ducks.MainDuck.Equip(((VanillaHat)hat).hat, false);
+        } else {
+            hat = DepthAnimHat.New(bitmap, None);
+        }
+        Hats.Add(hat);
+        return new WearableHat {
+            id = Hats.NewHatId(),
+            hatData = data,
+            hat = hat,
+        };
+    }
+
+    public override void Draw(GameTime gameTime) {
+        TryCall("draw", gameTime);
+    }
+
+    public override HatId GetId() {
+        return id;
+    }
+
+    public override void Init(Option<DynValue> luaState) {
+        this.luaState = luaState;
+    }
+
+    public override void Remove() {
+
+    }
+
+    public override void Update(GameTime gameTime) {
+        var wearableTable = DynValue.NewTable(script);
+        wearableTable.Table["sprite"] = hat.sprite;
+        wearableTable.Table["depth"] = ((VanillaHat)hat).hat.depth.value;
+
+        TryCall("update", gameTime, wearableTable);
+    }
+}
+
 public class DepthHat : AbstractHat {
     public List<TeamHat> hats;
     public IVector2 hatsAmount;
@@ -679,21 +574,31 @@ public class DepthHat : AbstractHat {
     List<int> horizIndices;
     CoroutineRunner coroutines;
     HatId id;
-    public DepthHatState State { get; private set; }
+    DepthHatState state = DepthHatState.Regular;
 
-    public override HatId Id() {
-        throw new NotImplementedException();
+    public DepthHatState State { get => state; private set {
+            state = value; 
+        }
     }
+    public HatId Id { get => id; }
+
+    [MoonSharpVisible(false)]
+    public override HatId GetId() {
+        return id;
+    }
+
+    public override void Draw(GameTime gameTime) { }
 
     public override void Remove() {
         foreach (var hat in hats) {
             Level.Remove(hat);
         }
+        Level.Remove(rock);
     }
 
-    public override void Init() { }
+    public override void Init(Option<DynValue> luaState) { }
 
-    public static DepthHat New(TeamsBitmap teamsBitmap, ScoreRock rock) {
+    public static DepthHat New(TeamsBitmap teamsBitmap, Option<ScoreRock> rockOption) {
         var hatsAmountX = (int)Math.Ceiling((float)teamsBitmap.frameSize.X / (float)Constants.MIN_DG_HAT_SIZE);
         var hatsAmountY = (int)Math.Ceiling((float)teamsBitmap.frameSize.Y / (float)Constants.MIN_DG_HAT_SIZE);
         var hatsAmount = new IVector2(hatsAmountX, hatsAmountY);
@@ -706,13 +611,19 @@ public class DepthHat : AbstractHat {
             hatsAmount = hatsAmount,
             normalIndices = normalIndices,
             horizIndices = horizontalIndices,
-            rock = rock,
+            rock = rockOption.ValueOrElse(() => {
+                var rock = new ScoreRock(0, 0, DuckNetwork.localProfile ?? Profiles.DefaultPlayer1);
+                Level.Add(rock);
+                return rock;
+            }),
             coroutines = new CoroutineRunner(),
-            id = HatId.New()
+            id = Hats.NewHatId()
         };
 
+        depthHat.State = DepthHatState.Regular;
+
         for (int i = 0; i < hatsAmountX * hatsAmountY; i++) {
-            var hat = new TeamHat(0, 0, null);
+            var hat = new TeamHat(0, -10000, TeamsStorage.GetTeamData(teamsBitmap.frames[0].teamHandles[0]).Unwrap().team);
             Level.Add(hat);
             depthHat.hats.Add(hat);
         }
@@ -741,6 +652,8 @@ public class DepthHat : AbstractHat {
                 switch (State) {
                     case DepthHatState.DepthInactive:
                         foreach (var hat in hats) {
+                            Hats.inactiveHatDepths[hat.GetHashCode()] = hat.owner.depth.value;
+
                             hat.owner = null;
                             hat.active = false;
                         }
@@ -762,6 +675,7 @@ public class DepthHat : AbstractHat {
                     case DepthHatState.DepthInactive:
                         foreach (var hat in hats) {
                             hat.owner = rock;
+                            Hats.inactiveHatDepths.Add(hat.GetHashCode(), hat.owner.depth.value);
                         }
                         yield return null;
 
@@ -789,31 +703,33 @@ public class DepthHat : AbstractHat {
         return true;
     }
 
-    public override void Update(GameTime gameTime, Option<DynValue> luaState) {
+    public override void Update(GameTime gameTime) {
         coroutines.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
         const float HAT_OFFSET = 31f;
 
         rock.position.y = -10000;
         rock.depth = new Depth(depth);
 
-        sprite.Update(gameTime);
+        sprite.update(gameTime);
         var currentFrame = sprite.CurrentFrame;
         //TODO: get the frame from the animation if there is one
         //also: update sprite
 
-        var currentTeams = teamsBitmap.frames[currentFrame.value].TeamHandles;
+        var currentTeams = teamsBitmap.frames[currentFrame.value].teamHandles;
         for (int x = 0; x < hatsAmount.X; x++) {
             for (int y = 0; y < hatsAmount.Y; y++) {
                 var hatIndex = y * hatsAmount.X + x;
                 var hat = hats[hatIndex];
                 var teamHandle = currentTeams[hatIndex];
-                var teamData = TeamsStorage.GetTeamData(teamHandle).Unwrap();
-                hat.team = teamData.team;
-                var virtualIndex = flippedHorizontally ? horizIndices[hatIndex] : normalIndices[hatIndex];
-                var virtualPosition = Functions.CoordsFromIndex(virtualIndex, hatsAmount.X);
-                var virtualPositionVec = new Vec2(virtualPosition.X, virtualPosition.Y);
-                hat.position = virtualPositionVec * (HAT_OFFSET) + position + new Vec2(Constants.MIN_DG_HAT_SIZE / 2);
-                hat.flipHorizontal = flippedHorizontally;
+                var teamDataOption = TeamsStorage.GetTeamData(teamHandle);
+                if (teamDataOption.ValueUnsafe() is var teamData && teamDataOption.IsSome) {
+                    hat.team = teamData.team;
+                    var virtualIndex = flippedHorizontally ? horizIndices[hatIndex] : normalIndices[hatIndex];
+                    var virtualPosition = Functions.CoordsFromIndex(virtualIndex, hatsAmount.X);
+                    var virtualPositionVec = new Vec2(virtualPosition.X, virtualPosition.Y);
+                    hat.position = virtualPositionVec * (HAT_OFFSET) + position + new Vec2(Constants.MIN_DG_HAT_SIZE / 2);
+                    hat.flipHorizontal = flippedHorizontally;
+                }
             }
         }
 
@@ -844,75 +760,102 @@ public class DepthHat : AbstractHat {
     }
 }
 
-public struct HatId {
-    static int lastHatId;
-    int value;
+[MoonSharpUserData]
+public record struct HatId {
+    [MoonSharpVisible(true)]
+    public uint id;
+    [MoonSharpVisible(true)]
+    public uint gen;
 
-    public static HatId New() {
-        var id = lastHatId;
-        lastHatId++;
-        return new HatId { value = id };
+    public static HatId New(uint id, uint gen) {
+        return new HatId { 
+            id = id,
+            gen = gen
+        };
     }
 }
-public static class DictionaryExt {
-    public static Option<TValue> RemoveGet<TKey, TValue>(this Dictionary<TKey, TValue> self, TKey key) {
-        self.TryGetValue(key, out var value);
-        var isRemoved = self.Remove(key);
-        if (isRemoved) {
-            return value;
-        } else {
-            return None;
-        }
-    }
-}
-
-public struct HatData {
+public struct HatStorageData {
     public AbstractHat hat;
-    public Option<DynValue> luaState;
 }
 
 /// <summary>
 /// Tracks all hats which are loaded during the current level. It gets cleared after a new level is loaded.
 /// </summary>
 public static class Hats {
-    public static Dictionary<HatId, HatData> hatsData;
+    public static Queue<HatId> recycledIds;
+    public static Dictionary<HatId, HatStorageData> hatsData;
+    public static Dictionary<int, float> inactiveHatDepths = [];
 
     public static void Init() {
         hatsData = [];
+        recycledIds = [];
+    }
+
+    public static void OnLevelStart() {
+        inactiveHatDepths = [];
+        Hats.RemoveAll();
+    }
+
+    public static Option<AbstractHat> Get(HatId id) {
+        if (!Hats.IsAlive(id)) {
+            return None;
+        }
+
+        return hatsData.Get(id).Map((data) => data.hat);
+    }
+
+    public static bool IsAlive(HatId id) {
+        if (Hats.hatsData.Get(id).Value() is var hatData && hatData.hat != null) { } else {
+            return false;
+        }
+
+        return hatData.hat.GetId().gen == id.gen;
+    }
+
+    public static HatId NewHatId() {
+        if (recycledIds.Count > 0) {
+            var recycledId = recycledIds.Dequeue();
+            recycledId.gen += 1;
+            return recycledId;
+        }
+
+        return HatId.New((uint)hatsData.Count, 0);
     }
 
     public static AbstractHat Add(AbstractHat hat, Option<DynValue> luaState = default) {
-        var data = new HatData {
+        var data = new HatStorageData {
             hat = hat,
-            luaState = luaState
         };
-        if (luaState.ValueUnsafe() is var state && luaState.IsSome) {
-            var initFnTable = state.Table.Get("init");
-            if (initFnTable.Function is var initFn) {
-                initFn.Call();
-            }
-        }
-        hatsData.Add(hat.Id(), data);
-        hat.Init();
+        hatsData.Add(hat.GetId(), data);
+        hat.Init(luaState);
         return hat;
     }
 
     public static void Remove(HatId id) {
         if (hatsData.RemoveGet(id).ValueUnsafe() is var data && data.hat is not null) {
+            recycledIds.Enqueue(id);
             data.hat.Remove();
         }
     }
     
     public static void RemoveAll() {
         foreach (var data in hatsData.Values) {
+            recycledIds.Enqueue(data.hat.GetId());
             data.hat.Remove();
         }
         hatsData.Clear();
     }
 
     public static void Update(GameTime gameTime) {
+        //TODO: FIX REMOVING WHILE ITERATING
         foreach (var data in hatsData.Values) {
-            data.hat.Update(gameTime, data.luaState);
+            data.hat.Update(gameTime);
+        }
+    }
+
+    public static void Draw(GameTime gameTime) {
+        foreach (var data in hatsData.Values) {
+            data.hat.Draw(gameTime);
         }
     }
 }

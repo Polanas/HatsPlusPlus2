@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using MoonSharp.Interpreter;
+using MoonSharp.Interpreter.Interop;
+using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace HatsPlusPlus;
@@ -7,11 +10,24 @@ public enum AnimType {
     OnDefault,
     OnPressQuack,
     OnReleaseQuack,
-    //to be added
+    OnPetStop,
+    OnPetApproach,
+    OnDuckDeath,
+    OnDuckJump,
+    OnDuckLand,
+    OnDuckGlide,
+    OnDuckWalk,
+    OnDuckSneak,
+    OnDuckNetted,
+    OnDuckSpawned,
+    OnHatPickedUp,
 }
 
-public struct AnimFrame {
+[MoonSharpUserData]
+public record struct AnimFrame {
+    [MoonSharpVisible(true)]
     public int value;
+    [MoonSharpVisible(true)]
     public Option<float> delay;
 
     public static AnimFrame New() {
@@ -45,28 +61,27 @@ public struct AnimFrame {
     }
 };
 
+[MoonSharpUserData]
 public struct Animation {
-    public AnimType animType;
-    public Option<string> name;
+    public string name;
     public float delay;
     public bool looping;
     public List<AnimFrame> frames;
-    public AnimId Id { get; private set; }
+    [JsonProperty(PropertyName = "anim_type")]
+    public AnimType? animType;
 
-    public static Animation New(AnimType animType, float delay, bool looping, Option<string> name, List<AnimFrame> frames) {
+    public static Animation New(string name, float delay, bool looping, List<AnimFrame> frames) {
         return new Animation {
-            animType = animType,
             delay = delay,
             looping = looping,
             frames = frames,
             name = name,
-            Id = AnimId.GenNew(),
         };
     }
 
     public AnimFrame NextFrame(int frameId) {
         var self = this;
-        return frames.Get(frameId).ValueOrElse(() => {
+        return frames.Get(frameId+1).ValueOrElse(() => {
             if (frameId < 0) {
                 return self.frames.First();
             }

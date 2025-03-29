@@ -5,146 +5,116 @@ using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.CodeDom;
+using MoonSharp.Interpreter;
+using MoonSharp.Interpreter.Interop;
 
 namespace HatsPlusPlus;
 
-public struct AnimId {
-    public static int lastAnimId = 0;
-    public int value;
-
-    public static AnimId New(int value) {
-        return new AnimId {
-            value = value
-        };
-    }
-
-    public static AnimId GenNew() {
-        var id = lastAnimId;
-        lastAnimId++;
-        return new AnimId {
-            value = id
-        };
-    }
-
-    public static bool operator ==(AnimId a, AnimId b) => a.value == b.value;
-    public static bool operator !=(AnimId a, AnimId b) => a.value != b.value;
-}
 
 public enum ClearState { 
-    Yes, No
+    Yes = 1, No
 }
 
+[MoonSharpUserData]
 public class HatSprite
 {
-
     public bool Finished => finished;
     public bool FrameChanged { get; private set; }
+    public bool ForceFrameChanged { get; private set; }
     public bool AnimChanged { get; private set; }
     public AnimFrame CurrentFrame {
         get {
-            return forceCurrentFrame.ValueOrElse(() => {
-                return currentAnimId
-                .Map((id) => animations[id].frames[currentFrameId])
+            return forceCurrentFrame.Map((frame) => AnimFrame.New(frame)).ValueOrElse(() => {
+                return currentAnimName
+                .Map((name) => anims[name].frames[currentFrameId])
                 .IfNone(() => AnimFrame.New(currentFrameId));
             });
         }
     }
+    public int PreviousFrameId { get; private set; }
 
-    public Option<AnimFrame> forceCurrentFrame;
-    public Dictionary<AnimId, Animation> animations;
-    public Option<AnimId> currentAnimId;
+    public Option<int> forceCurrentFrame;
+    public Dictionary<string, Animation> anims;
+    public Option<string> currentAnimName;
     public bool frozen;
     public int currentFrameId;
     public float timeAccumulator;
     bool finished;
+    bool frameChanged;
+    Option<int> lastForceCurrentFrame;
 
+    [MoonSharpVisible(false)]
     public static HatSprite New() {
         return new HatSprite {
-            animations = new(),
+            anims = new(),
+            lastForceCurrentFrame = Some(-1),
+            PreviousFrameId = -1,
         };
     }
 
-    public Option<Animation> CurrentAnim() {
-        if (currentAnimId.Value() is AnimId anim_id && currentAnimId.IsSome) {
-            if (animations.TryGetValue(anim_id, out var anim)) {
-                return anim;
-            }
-            return None;
-        } else {
-            return None;
-        }
+    public Option<Animation> currentAnim() {
+        return currentAnimName.AndThen((a) => anims.Get(a));
     }
 
-    public AnimId AddAnim(Animation animation) {
-        var id = animation.Id;
-        this.animations.Add(animation.Id, animation);
-        return id;
+    public void addAnim(Animation anim) {
+        anims[anim.name] = anim;
     }
 
-    public Option<Animation> AnimById(AnimId id) {
-        if (animations.TryGetValue(id, out Animation anim)) {
-            return Some(anim);
-        }
-        return None;
+    public void addAnim(string name, float delay, bool looping, List<AnimFrame> frames) {
+        var anim = Animation.New(name, delay, looping, frames);
+        anims[name] = anim;
     }
 
-    public void SetAnim(AnimId id, ClearState clearState = ClearState.Yes) {
-        if (currentAnimId.Value() is AnimId current_id && currentAnimId.IsSome && current_id != id) {
-            finished = false;
-            if (clearState == ClearState.Yes) {
-                ClearFrameState();
-            }
-            AnimChanged = true;
-        }
-        this.currentAnimId = id;
+    public bool hasAnim(string animName) {
+        return anims.Values.Any((anim) => anim.name == animName);
     }
 
-    public bool HasAnim(AnimId id) {
-        return animations.Values.Any((anim) => anim.Id == id);
-    }
-
-    public void SetAnim(string name, ClearState clearState = ClearState.Yes) {
-        foreach (var pair in animations) {
-            (var currentAnim, var currentId) = (pair.Value, pair.Key);
-
-            if (currentAnim.name == name) {
-                if (currentAnimId.Map((id) => id != currentId).ValueOr(true)) {
+    public void setAnim(string name, ClearState clearState = ClearState.Yes) {
+        foreach (var pair in anims) {
+            (var _, var animName) = (pair.Value, pair.Key);
+            if (animName == name) {
+                if (currentAnimName.Map((name) => name != animName).ValueOr(true)) {
                     finished = false;
                     if (clearState == ClearState.Yes) {
-                        ClearFrameState();
+                        clearFrameState();
                     }
                     AnimChanged = true;
+                    currentAnimName = animName;
                 }
-                currentAnimId = currentId;
             }
         }
     }
 
-    public Option<AnimFrame> NextFrame() {
+    public Option<AnimFrame> nextFrame() {
         var self = this;
         return forceCurrentFrame.Match(
-            (value) => value,
-            () => {
-                return self.CurrentAnim().Map((a) => a.NextFrame(self.currentFrameId));
-            });
+            (value) => AnimFrame.New(value),
+            () =>  self.currentAnim()
+                   .Map((a) => a.NextFrame(self.currentFrameId))
+            );
     }
 
-    public void ClearFrameState() {
+    public void clearFrameState() {
         currentFrameId = 0;
         timeAccumulator = 0;
     }
 
-    public void Update(GameTime gameTime) {
+    public void update(GameTime gameTime) {
         FrameChanged = false;
         AnimChanged = false;
+        PreviousFrameId = currentFrameId;
+        ForceFrameChanged = false;
+        if (lastForceCurrentFrame != forceCurrentFrame && forceCurrentFrame.IsSome) {
+            ForceFrameChanged = true;
+        }
         if (frozen || finished) {
             return;
         }
 
         AnimFrame currentFrame;
-
-        if (this.currentAnimId.Value() is AnimId currentAnimId && this.currentAnimId.IsSome) {
-            var currentAnim = animations[currentAnimId];
+        lastForceCurrentFrame = forceCurrentFrame;
+        if (this.currentAnimName.ValueUnsafe() is var  currentAnimName && this.currentAnimName.IsSome) {
+            var currentAnim = anims[currentAnimName];
             currentFrame = currentAnim.frames[currentFrameId];
             var delay = currentFrame.delay.IfNone(() => currentAnim.delay);
 
@@ -152,18 +122,19 @@ public class HatSprite
             if (timeAccumulator >= delay) {
                 timeAccumulator = 0;
                 currentFrameId += 1;
-                FrameChanged = true;
-            }
-            if (currentFrameId == currentAnim.frames.Length()) {
-                if (currentAnim.looping) {
-                    currentFrameId = 0;
+                if (currentFrameId == currentAnim.frames.Count) {
+                    if (currentAnim.looping) {
+                        currentFrameId = 0;
+                    } else {
+                        finished = true;
+                        currentFrameId -= 1;
+                    }
                 } else {
-                    finished = true;
-                    currentFrameId -= 1;
+                    FrameChanged = true;
                 }
             }
         } else {
-            currentFrame = forceCurrentFrame.Value();
+            currentFrame = AnimFrame.New(forceCurrentFrame.Value());
             return;
         }
     }
