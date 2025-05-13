@@ -68,6 +68,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>content\DLLs\Harmony\0Harmony.dll</HintPath>
     </Reference>
+    <Reference Include="AsepriteDotNet">
+      <HintPath>content\DLLs\AsepriteDotNet.dll</HintPath>
+    </Reference>
     <Reference Include="DuckGame">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\Duck Game\DuckGame.exe</HintPath>
       <Private>False</Private>
@@ -159,6 +162,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="src\Animation.cs" />
+    <Compile Include="src\Assert.cs" />
     <Compile Include="src\BufferingTest.cs" />
     <Compile Include="src\Constants.cs" />
     <Compile Include="src\Coroutines.cs" />
@@ -171,6 +175,8 @@
     <Compile Include="src\Extenstions.cs" />
     <Compile Include="src\GlobalUsings.cs" />
     <Compile Include="src\Hats.cs" />
+    <Compile Include="src\HResult.cs" />
+    <Compile Include="src\RoomHatUtils.cs" />
     <Compile Include="src\ScriptExtensions.cs" />
     <Compile Include="src\Teams.cs" />
     <Compile Include="src\TeamSlots.cs" />

@@ -26,10 +26,12 @@ function State.init()
     MouthHat.sprite:setAnim("normal")
     ---@type depthHat[]
     EyeHats = {}
+    print("hi")
+    print("depth hat")
     for i = 1,2 do
         EyeHats[i] = depthHat(EyeTeams --[[@as teamsBitmap]])
         EyeHats[i].sprite.forceCurrentFrame = 0
-        EyeHats[i].depth = ducks.main.depth + 1
+        EyeHats[i].depth = 1
         EyeHats[i]:setState(depthHatState.depthInactive)
     end
 end
@@ -47,6 +49,7 @@ function State.draw(time)
     imgui.text("hold object: " .. tostring(HoldObjectDepth))
 end
 HatAngle = 0
+RunOnce = false
 ---@param time gameTime
 ---@param hat wearable
 function State.update(time, hat)
@@ -96,15 +99,15 @@ function State.update(time, hat)
     end
     hat.sprite.forceCurrentFrame = Blinking and 0 or 1
     for _, hat in pairs(EyeHats) do
-        if Blinking then
-            hat.position.y = -10000
-        end
         hat.sprite.forceCurrentFrame = 0
         hat.depth = 1
         hat:setState(depthHatState.depthInactive)
+        -- if Blinking then
+        --     hat.position.y = -100
+        -- end
         hat:update()
     end
-    MouthHat.position = ducks.main.position + vec2(0,1);
+    MouthHat.position = hat.position + vec2(2,8);
     if keyboard.pressed(keys.j) then
         MouthHat.sprite:setAnim("shout")
     end
@@ -114,10 +117,6 @@ function State.update(time, hat)
     if keyboard.pressed(keys.l) then
         MouthHat.sprite:setAnim("normal")
     end
-    MouthHat.depth = hat.depth + 0.1
-    HatDepth = MouthHat.depth
-    MouthHat.angle = 0
-    -- MouthHat.sprite.forceCurrentFrame = 0
     MouthHat:update()
 end
 

@@ -60,8 +60,8 @@ class ObjectUserdataDescriptor : IUserDataDescriptor {
     }
 }
 
-public static class LuaUtils {
-    public static void RegisterTypes(Script script, DataType dataType = DataType.Table) {
+internal static class LuaUtils {
+    internal static void RegisterTypes(Script script, DataType dataType = DataType.Table) {
         RegisterType<TeamId>(script, dataType);
         RegisterType<TeamGen>(script, dataType);
         RegisterType<TeamHandle>(script, dataType);
@@ -71,7 +71,6 @@ public static class LuaUtils {
         RegisterType<AnimFrame>(script, dataType);
         RegisterType<Animation>(script, dataType);
         RegisterType<AnimType>(script, dataType);
-        RegisterType<DepthHat>(script, dataType);
         RegisterType<HatId>(script, dataType);
 
         LoadVec2(script);
@@ -91,7 +90,7 @@ public static class LuaUtils {
         });
     }
 
-    public static void LoadDuck(Script script) {
+    internal static void LoadDuck(Script script) {
         var converters = Script.GlobalOptions.CustomConverters;
         converters.SetClrToScriptCustomConversion<Duck>((script, duck) => {
             var duckValue = DynValue.NewTable(script);
@@ -160,12 +159,12 @@ public static class LuaUtils {
         RegisterOption<Duck>(script);
     }
 
-    public static void RegisterType<T>(Script script, DataType dataType = DataType.Table) {
+    internal static void RegisterType<T>(Script script, DataType dataType = DataType.Table) {
         UserData.RegisterType<T>();
         RegisterOption<T>(script, dataType);
     }
 
-    public static DynValue NewReflect(Script script, object obj) {
+    internal static DynValue NewReflect(Script script, object obj) {
         var value = DynValue.NewTable(script);
         var table = value.Table;
         table["typeName"] = () => obj.GetType().Name;
@@ -349,13 +348,13 @@ public static class LuaUtils {
         return ReflectType.Other;
     }
 
-    public static void UpdateLevel(Script script) {
+    internal static void UpdateLevel(Script script) {
         //var level = script.Globals.Get("level").Table;
         //var current 
         //level["current"] = NewReflect(script, Level.current);
     }
 
-    public static void LoadLevel(Script script) {
+    internal static void LoadLevel(Script script) {
         var level = DynValue.NewTable(script).Table;
         level["nearest"] = (ScriptExecutionContext ctx, CallbackArguments args) => {
             var script = ctx.GetScript();
@@ -457,7 +456,7 @@ public static class LuaUtils {
     }
 
 
-    public static void RegisterOption<T>(Script script, DataType dataType = DataType.Table) {
+    internal static void RegisterOption<T>(Script script, DataType dataType = DataType.Table) {
         var converters = Script.GlobalOptions.CustomConverters;
         converters.SetClrToScriptCustomConversion<Option<T>>((script, option) => {
             if (option.ValueUnsafe() is var value && option.IsSome) {
@@ -477,7 +476,7 @@ public static class LuaUtils {
         });
     }
 
-    public static void RegisterOptions(Script script) {
+    internal static void RegisterOptions(Script script) {
         RegisterOption<float>(script);
         var converters = Script.GlobalOptions.CustomConverters;
         converters.SetScriptToClrCustomConversion(DataType.String, typeof(string), (value) => {
@@ -557,7 +556,7 @@ public static class LuaUtils {
         });
     }
 
-    public static void OverridePrint(Script script) {
+    internal static void OverridePrint(Script script) {
         static DynValue Print(ScriptExecutionContext ctx, CallbackArguments args) {
             var arguments = args.GetArray();
             var script = ctx.GetScript();
@@ -574,7 +573,7 @@ public static class LuaUtils {
         script.Globals["print"] = DynValue.NewCallback(Print);
     }
 
-    public static void LoadVec2(Script script) {
+    internal static void LoadVec2(Script script) {
         var converters = Script.GlobalOptions.CustomConverters;
         converters.SetClrToScriptCustomConversion<Vec2>((script, vec) => {
             return script.Call(script.Globals["vec2"], vec.x, vec.y);
@@ -586,7 +585,7 @@ public static class LuaUtils {
         RegisterOption<Vec2>(script);
     }
 
-    public static void LoadIVector2(Script script) {
+    internal static void LoadIVector2(Script script) {
         var converters = Script.GlobalOptions.CustomConverters;
         converters.SetClrToScriptCustomConversion<IVector2>((script, vec) => {
             return script.Call(script.Globals["vec2"], vec.X, vec.Y);
@@ -598,7 +597,7 @@ public static class LuaUtils {
         RegisterOption<IVector2>(script);
     }
 
-    public static void LoadVec3(Script script) {
+    internal static void LoadVec3(Script script) {
         var converters = Script.GlobalOptions.CustomConverters;
         converters.SetClrToScriptCustomConversion<Vec3>((script, vec) => {
             return script.Call(script.Globals["vec3"], vec.x, vec.y, vec.z);
@@ -610,7 +609,7 @@ public static class LuaUtils {
         RegisterOption<Vec3>(script);
     }
 
-    public static void LoadApi(Script script) {
+    internal static void LoadApi(Script script) {
         var converters = Script.GlobalOptions.CustomConverters;
         (script.Options.ScriptLoader as ScriptLoaderBase).ModulePaths = [Path.Combine(Mod.GetPath<HatsPlusPlus2>("LuaScripts"), "?.lua")];
         OverridePrint(script);
@@ -632,7 +631,7 @@ public static class LuaUtils {
         script.DoFile(Mod.GetPath<HatsPlusPlus2>(Path.Combine("LuaScripts", "main.lua")));
     }
 
-    public static void LoadImgui(Script script) {
+    internal static void LoadImgui(Script script) {
         var imguiFns = DynValue.NewTable(script);
         imguiFns.Table["window"] = (string name, DynValue func) => {
             ImGui.Begin(name);
@@ -654,7 +653,7 @@ public static class LuaUtils {
         script.Globals["imguiFns"] = imguiFns.Table;
     }
 
-    public static void LoadHatFunctions(Script script) {
+    internal static void LoadHatFunctions(Script script) {
         script.Globals["vanillaHat"] = (TeamsBitmap teamsBitmap) => {
             var hatTable = DynValue.NewTable(script);
             var vanillaHat = (VanillaHat)Hats.Add(VanillaHat.New(teamsBitmap));
@@ -703,14 +702,13 @@ public static class LuaUtils {
             return hatTable;
         };
         script.Globals["teamsBitmap"] = (string path, Vec2 frameSize) => {
-            var bitmap = Bitmap.FromPath(path);
-            var either = TeamsStorage.LoadTeamsBitmap(bitmap, new IVector2((int)frameSize.x, (int)frameSize.y));
-            return either.Match(
+            var result = TeamsStorage.LoadTeamsBitmap(path, new IVector2((int)frameSize.x, (int)frameSize.y));
+            return result.Match(
+                (bitmap) => DynValue.FromObject(script, bitmap),
                 (error) => {
                     LuaLogger.Log($"Error while loading teamsBitmap with path {path}: {error}");
                     return DynValue.Nil;
-                },
-                (bitmap) => DynValue.FromObject(script, bitmap)
+                }
             );
         };
         script.Globals["hatSprite"] = () => {
@@ -746,6 +744,10 @@ public static class LuaUtils {
                 if (Hats.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
                     return DynValue.Nil;
                 }
+
+                //if (!(hat as DepthHat).Ready) {
+                //    return DynValue.Nil;
+                //}
 
                 var state = hatTable.Table.Get("state");
                 (hat as DepthHat).SetState(state.Type == DataType.Number ? (DepthHatState)state.Number : DepthHatState.Regular);
@@ -822,7 +824,7 @@ public static class LuaUtils {
         };
     }
 
-    public static void LoadInput(Script script) {
+    internal static void LoadInput(Script script) {
         var input = DynValue.NewTable(script).Table;
         input["pressed"] = (string trigger, Option<string> profile) => Input.Pressed(trigger, profile.ValueOr("Any"));
         input["down"] = (string trigger, Option<string> profile) => Input.Down(trigger, profile.ValueOr("Any"));
@@ -831,7 +833,7 @@ public static class LuaUtils {
         script.Globals["input"] = input;
     }
 
-    public static void LoadKeyboard(Script script) {
+    internal static void LoadKeyboard(Script script) {
         var keyboard = DynValue.NewTable(script).Table;
         keyboard["nothingPressed"] = () =>
             Keyboard.NothingPressed();
@@ -844,12 +846,14 @@ public static class LuaUtils {
         script.Globals["keyboard"] = keyboard;
     }
 
-    public static void UpdateDucks(Script script) {
+    internal static void UpdateDucks(Script script) {
         Table ducks = script.Globals.Get("ducks").Table;
         if (ducks == null) {
             ducks = DynValue.NewTable(script).Table;
             script.Globals["ducks"] = ducks;
         }
+        //TODO: that can be RockThrowDuck
+        //maybe not even update anything during intermission?
         ducks["main"] = DuckNetwork.localProfile?.duck ?? Profiles.DefaultPlayer1.duck;
 
         var allDucksValue = DynValue.NewTable(script);
@@ -860,7 +864,7 @@ public static class LuaUtils {
         }
     }
 
-    public static void LoadMaths(Script script) {
+    internal static void LoadMaths(Script script) {
         var mathsTable = DynValue.NewTable(script).Table;
         mathsTable["pointDirection"] = (Vec2 p1, Vec2 p2) => {
             return Maths.PointDirection(p1, p2);
@@ -869,14 +873,13 @@ public static class LuaUtils {
         script.Globals["maths"] = mathsTable;
     }
 
-    public static void Update(Script script) {
+    internal static void Update(Script script) {
         LuaUtils.UpdateDucks(script);
         LuaUtils.UpdateLevel(script);
         LuaUtils.UpdateMouse(script);
     }
-    
 
-    public static void UpdateMouse(Script script) {
+    internal static void UpdateMouse(Script script) {
         Table mouse = script.Globals.Get("mouse").Table;
         if (mouse == null) {
             mouse = DynValue.NewTable(script).Table;

@@ -10,7 +10,7 @@ using System.Drawing;
 using System.Numerics;
 
 namespace HatsPlusPlus; 
-public class BufferingTest {
+internal class BufferingTest {
 
     List<Team> teams = new();
     Team empty;
@@ -30,7 +30,7 @@ public class BufferingTest {
 
     ScoreRock rock;
 
-    public void Init() {
+    internal void Init() {
         var my_bitmap = Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>("image.png"));
         var bitmap = new System.Drawing.Bitmap(my_bitmap.Width, my_bitmap.Height);
         for (int x = 0; x < bitmap.Width; x++) {
@@ -65,7 +65,7 @@ public class BufferingTest {
         teams.Add(team4);
     }
 
-    public void Update() {
+    internal void Update() {
         time += 1f / 60f;
         anim_counter++;
 

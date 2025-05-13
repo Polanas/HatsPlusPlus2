@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 
 [assembly: AssemblyTitle("HatsPlusPlus 2.0")]
 [assembly: AssemblyDescription("Idk")]
@@ -34,6 +35,10 @@ namespace HatsPlusPlus;
 public class HatsPlusPlus2 : DisabledMod {
     public static ImFontPtr font;
 
+    public static string GetPathFixed(string relativePath) {
+        return Mod.GetPath<HatsPlusPlus2>(relativePath).Replace("/", "\\");
+    }
+
     static HatsPlusPlus2() {
         AppDomain.CurrentDomain.AssemblyResolve += Resolve;
     }
@@ -43,13 +48,14 @@ public class HatsPlusPlus2 : DisabledMod {
 
     private static Assembly Resolve(object sender, ResolveEventArgs eventArgs) {
         var short_name = new AssemblyName(eventArgs.Name).Name;
-        var dll_path = Directory.GetFiles(Mod.GetPath<HatsPlusPlus2>("DLLs\\"), "*.dll", SearchOption.AllDirectories)
+        var dll_path = Directory.GetFiles(GetPathFixed("DLLs"), "*.dll", SearchOption.AllDirectories)
             .First(path => path.Contains(short_name));
 
         return Assembly.LoadFile(dll_path) ?? null;
     }
 
     protected override void OnPreInitialize() {
+        Environment.SetEnvironmentVariable("PATH", Environment.GetEnvironmentVariable("PATH") + ";" + Path.Combine(GetPathFixed("DLLs"), "Native"));
         base.OnPreInitialize();
     }
     protected override void OnPostInitialize() {
@@ -59,13 +65,18 @@ public class HatsPlusPlus2 : DisabledMod {
         TeamsStorage.Init();
         TeamsSender.Init();
         Hats.Init();
+        RoomHatUtils.Init();
         DGImGui.Initialize();
         var updater = Updater.New();
         DGImGui.updater = updater;
 
         (typeof(Game).GetField("updateableComponents", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic).GetValue(MonoMain.instance) as List<IUpdateable>).Add(new ModUpdate() { updater = updater });
         (typeof(Game).GetField("drawableComponents", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic).GetValue(MonoMain.instance) as List<IDrawable>).Add(new ModDraw());
-
+        
+        foreach (var path in Directory.GetFiles(GetPathFixed("DLLs"), "*.dll")) {
+            var assembly = Assembly.LoadFile(path);
+            AppDomain.CurrentDomain.Load(assembly.GetName());
+        }
 
         //make sure libs is loaded early to prevent lag spikes
         {
@@ -76,7 +87,18 @@ public class HatsPlusPlus2 : DisabledMod {
 
             var script = new MoonSharp.Interpreter.Script();
             script.DoString("print('hello there')");
+            var hat = DepthHat.New(new TeamsBitmap {
+                frames = [],
+                frameSize = new IVector2(20,20),
+                isBig = false
+            }, new ScoreRock(20, 20, null));
         }
+
+        var asyncAssembly = Assembly.LoadFile(Mod.GetPath<HatsPlusPlus2>("DLLs\\Microsoft.Bcl.AsyncInterfaces.dll"));
+        AppDomain.CurrentDomain.Load(asyncAssembly.GetName());
+        var threadsAssemlby = Assembly.LoadFile(Mod.GetPath<HatsPlusPlus2>("DLLs\\System.Threading.Tasks.Extensions.dll"));
+        AppDomain.CurrentDomain.Load(threadsAssemlby.GetName());
+        Preloading.Preload();
     }
 }
 

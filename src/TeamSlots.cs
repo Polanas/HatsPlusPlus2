@@ -7,7 +7,7 @@ using System.Linq;
 namespace HatsPlusPlus; 
 
 [MoonSharpUserData]
-public record struct TeamId {
+internal record struct TeamId {
     [MoonSharpVisible(true)]
     public uint value;
 
@@ -19,7 +19,7 @@ public record struct TeamId {
 }
 
 [MoonSharpUserData]
-public record struct TeamGen {
+internal record struct TeamGen {
     [MoonSharpVisible(true)]
     public uint value;
 
@@ -31,28 +31,28 @@ public record struct TeamGen {
 }
 
 [MoonSharpUserData]
-public record struct TeamHandle {
+internal record struct TeamHandle {
     [MoonSharpVisible(true)]
     public TeamGen gen;
     [MoonSharpVisible(true)]
     public TeamId id;
 
-    public static TeamHandle New(TeamGen gen, TeamId id) {
+    internal static TeamHandle New(TeamGen gen, TeamId id) {
         return new TeamHandle {
             gen = gen,
             id = id,
         };
     }
 }
-//public record struct TeamHandle(TeamGeneration Gen, TeamId TeamId);
-public record struct TeamRecord(TeamHandle Handle);
+//internal record struct TeamHandle(TeamGeneration Gen, TeamId TeamId);
+internal record struct TeamRecord(TeamHandle Handle);
 
-public class TeamSlots {
+internal class TeamSlots {
     Option<TeamRecord>[] Slots;
     Queue<TeamHandle> recycledHandles;
     uint length;
 
-    public static TeamSlots New() {
+    internal static TeamSlots New() {
         return new TeamSlots {
             Slots = new Option<TeamRecord>[1000],
             recycledHandles = new Queue<TeamHandle>(),
@@ -70,7 +70,7 @@ public class TeamSlots {
         return TeamHandle.New(TeamGen.New(0), TeamId.New(length - 1));
     }
 
-    public Option<TeamHandle> AddTeam() {
+    internal Option<TeamHandle> AddTeam() {
         if (length >= Slots.Length) {
             return None;
         }
@@ -80,7 +80,7 @@ public class TeamSlots {
         return newHanlde;
     }
 
-    public void RemoveTeam(TeamHandle handle) {
+    internal void RemoveTeam(TeamHandle handle) {
         if (!IsHandleValid(handle)) {
             return;
         }
@@ -89,11 +89,11 @@ public class TeamSlots {
         Slots[handle.id.value] = None;
     }
 
-    public bool IsHandleValid(TeamHandle handle) {
+    internal bool IsHandleValid(TeamHandle handle) {
         return Slots[handle.id.value].Map((record) => record.Handle == handle).IfNone(false);
     }
 
-    public Option<int> GetSlotId(TeamHandle handle) {
+    internal Option<int> GetSlotId(TeamHandle handle) {
         if (!IsHandleValid(handle)) {
             return None;
         }

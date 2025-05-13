@@ -5,22 +5,22 @@ using System.IO;
 
 namespace HatsPlusPlus;
 
-public class Bitmap {
-    public int Width { get; private set; }
-    public int Height { get; private set; }
-    public byte[] Data { get; private set; }
+internal class Bitmap {
+    internal int Width { get; private set; }
+    internal int Height { get; private set; }
+    internal byte[] Data { get; private set; }
 
-    public Option<string> Path { get; private set; }
+    internal Option<string> Path { get; private set; }
 
-    public static Bitmap FromMemory(byte[] data, int width, int height) =>
+    internal static Bitmap FromMemory(byte[] data, int width, int height) =>
         new Bitmap(data, width, height);
 
-    public static Bitmap Empty(int width, int height) {
+    internal static Bitmap Empty(int width, int height) {
         var data = new byte[height * width * 4];
         return new Bitmap(data, width, height);
     }
 
-    public static Bitmap FromPath(string path) {
+    internal static Bitmap FromPath(string path) {
         var image = ImageResult.FromStream(File.OpenRead(path), StbImageSharp.ColorComponents.RedGreenBlueAlpha);
         var bitmap = Bitmap.FromMemory(image.Data, image.Width, image.Height);
         bitmap.Path = path;
@@ -34,7 +34,7 @@ public class Bitmap {
         Path = None;
     }
 
-    public bool IsEqualTo(Bitmap other) {
+    internal bool IsEqualTo(Bitmap other) {
         if (other.Width != Width || other.Height != Height) {
             return false;
         }
@@ -52,13 +52,13 @@ public class Bitmap {
         return true;
     }
 
-    public void Save(string path) {
+    internal void Save(string path) {
         using FileStream fs = new(path, FileMode.OpenOrCreate);
         var writer = new ImageWriter();
         writer.WritePng(Data, Width, Height, StbImageWriteSharp.ColorComponents.RedGreenBlueAlpha, fs);
     }
 
-    public void Empty(IVector2 position, IVector2 size) {
+    internal void Empty(IVector2 position, IVector2 size) {
         var originalPosition = position;
         for (; position.X < size.X + originalPosition.X; position.X++) {
             for (; position.Y < size.Y + originalPosition.Y; position.Y++)
@@ -68,7 +68,7 @@ public class Bitmap {
         }
     }
 
-    public Bitmap Clone() {
+    internal Bitmap Clone() {
         var clonedBitmap = Bitmap.Empty(Width, Height);
 
         for (int x = 0; x < Width; x++) {
@@ -81,7 +81,7 @@ public class Bitmap {
      ; return clonedBitmap;
     }
 
-    public Bitmap ClonePart(IVector2 position, IVector2 size) {
+    internal Bitmap ClonePart(IVector2 position, IVector2 size) {
         var clonedBitmap = Bitmap.Empty(size.X, size.Y);
 
         for (int x = 0; x < size.X; x++) {
@@ -94,7 +94,7 @@ public class Bitmap {
         return clonedBitmap;
     }
 
-    public void Draw(Bitmap bitmap, IVector2 position) {
+    internal void Draw(Bitmap bitmap, IVector2 position) {
         for (int x = 0; x < bitmap.Width; x++) {
             for (int y = 0; y < bitmap.Height; y++) {
                 var offset = new IVector2(x, y);
@@ -102,17 +102,17 @@ public class Bitmap {
             }
         }
     }
-    public static int Array2DPositionToIndex(IVector2 position, int width) =>
+    internal static int Array2DPositionToIndex(IVector2 position, int width) =>
         position.Y * width + position.X;
 
-    public static IVector2 IndexToArray2DPosition(int index, int width) {
+    internal static IVector2 IndexToArray2DPosition(int index, int width) {
         int x = index % width;
         int y = (index - x) / width;
 
         return new IVector2(x, y);
     }
 
-    public Option<Color> GetPixel(IVector2 position) {
+    internal Option<Color> GetPixel(IVector2 position) {
         if (position.X < 0 || position.Y < 0 || position.X >= Width || position.Y >= Height)
             return None;
 
@@ -125,7 +125,7 @@ public class Bitmap {
             Data[index * 4 + 3]);
     }
 
-    public void SetPixel(IVector2 position, Color Color) {
+    internal void SetPixel(IVector2 position, Color Color) {
         if (position.X < 0 || position.Y < 0 || position.X >= Width || position.Y >= Height)
             return;
 

@@ -1,5 +1,8 @@
 ﻿using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using AsepriteDotNet.Aseprite;
+using AsepriteDotNet.Common;
+using AsepriteDotNet.IO;
 using DuckGame;
 using ImGuiNET;
 using System.Linq;
@@ -12,10 +15,25 @@ using MoonSharp.Interpreter;
 using System.Security.Cryptography;
 using Newtonsoft.Json;
 using HatsPlusPlus.Parsing;
+using AsepriteDotNet.Aseprite.Types;
 
 namespace HatsPlusPlus;
 
-public class Updater {
+internal class DrawThingTemp : Thing {
+    public static Vec2 current;
+    public static Vec2 first;
+    public static int counter;
+    public override void Draw() {
+        base.Draw();
+        Graphics.DrawCircle(new Vec2(0, 0), 50, DuckGame.Color.Red, 0, new Depth(2));
+    }
+
+    public DrawThingTemp(): base(0,-1000) {
+        this.layer = Layer.Blocks;
+    }
+}
+
+internal class Updater {
     Level lastLevel;
     bool wasNetworkActive;
     Script script;
@@ -27,23 +45,23 @@ public class Updater {
     TeamsBitmap teamsBitmap;
     HatSprite hatSpriteTest;
 
-    public static Updater New() {
+    internal static Updater New() {
         var updater = new Updater();
         updater.coroutines = new CoroutineRunner();
 
         return updater;
     }
 
-    public void OnEnteringOnline() {
+    internal void OnEnteringOnline() {
         //TeamsStorage.RemoveAll();
         DevConsole.Log(DCSection.Connection, "Entering online!");
     }
 
-    public void OnLobbyEnter() {
+    internal void OnLobbyEnter() {
 
     }
 
-    public void OnLevelEnter() {
+    internal void OnLevelEnter() {
         Hats.OnLevelStart();
 
         if (Level.current is TeamSelect2) {
@@ -54,22 +72,10 @@ public class Updater {
         }
     }
     ScoreRock rock;
-    public void Update(GameTime gameTime) {
-        //if (rock is null) {
-        //    rock = new ScoreRock(20, 20, DuckNetwork.localProfile);
-        //    rock.depth = -10;
-        //    Level.Add(rock);
-        //}
-        //if (Ducks.MainDuck.ragdoll != null) {
-        //    Ducks.MainDuck.ragdoll.part1.owner = rock;
-        //    Ducks.MainDuck.ragdoll.part2.owner = rock;
-        //    Ducks.MainDuck.ragdoll.part3.owner = rock;
-        //}
-        //Ducks.MainDuck.ragdoll.part1.owner = Ducks.MainDuck;
-        //Ducks.MainDuck.ragdoll.part1._joint.visible = false;
-        //Ducks.MainDuck.ragdoll.part1.connect.visible = false;
-        //Ducks.MainDuck.ragdoll.part1.visible = false;
-        //Ducks.MainDuck.ragdoll.visible = false;
+    internal void Update(GameTime gameTime) {
+        if (Keyboard.Pressed(Keys.O)) {
+            Level.Add(new DrawThingTemp());
+        }
         if (script is not null) {
             LuaUtils.UpdateMouse(script);
             LuaUtils.UpdateDucks(script);
@@ -97,16 +103,22 @@ public class Updater {
         wasNetworkActive = Network.isActive;
     }
 
-    public void Draw(GameTime gameTime) {
+    internal void Draw(GameTime gameTime) {
         LuaLogger.Show();
         Hats.Draw(gameTime);
         ImGui.Begin("test");
+
+        ImGui.Text($"current: {DrawThingTemp.current.x}");
+        ImGui.Text($"first: {DrawThingTemp.first.x}");
+        ImGui.Text($"difference: {Math.Abs(DrawThingTemp.first.x - DrawThingTemp.current.x)}");
+        ImGui.Text($"counter: {DrawThingTemp.counter}");
+
         if (ImGui.Button("remove all")) {
             Hats.RemoveAll();
             script = null;
         }
         if (ImGui.Button("reload script")) {
-            var state = script.DoString(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("LuaScripts\\wearable.lua")), null, "wearable.lua");
+            var state = script.DoString(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("LuaScripts\\skebob.lua")), null, "wearable.lua");
             //state.Table.Get("load").Function.Call();
             this.wearableHat.IfSome((hat) => {
                 hat.luaState = state;
@@ -119,7 +131,7 @@ public class Updater {
             var hat = ScriptableHat.New();
             script = new Script(MoonSharp.Interpreter.CoreModules.Preset_Complete);
             LuaUtils.LoadApi(script);
-            var state = script.DoString(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("LuaScripts\\wearable.lua")), null, "wearable.lua");
+            var state = script.DoString(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("LuaScripts\\skebob.lua")), null, "wearable.lua");
             Hats.Add(hat, state);
             try {
                 state.Table.Get("init").Function.Call();
@@ -130,16 +142,25 @@ public class Updater {
             this.scriptableHat = hat;
         }
         if (ImGui.Button("load teams")) {
-            //NOTE: teams should be loaded BEFORE any hats are spawn to ensure hats are displayed correctly
-            var bitmap = Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>("niko.png"));
-            teamsBitmap = TeamsStorage.LoadTeamsBitmap(bitmap, new IVector2(32)).UnwrapOk();
+            teamsBitmap = TeamsStorage.LoadTeamsBitmap(HatsPlusPlus2.GetPathFixed("niko.png"), new IVector2(32)).Unwrap();
+        }
+        if (ImGui.Button("load room")) {
+            var hatData = JsonConvert.DeserializeObject<HatData>(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("RoomHatTest\\data.json")));
+            var roomData = hatData.elements[0].room;
+            var bitmap = Bitmap.FromPath(HatsPlusPlus2.GetPathFixed("RoomHatTest\\images\\room.png"));
+            var roomHat = RoomHat.New(roomData, None, bitmap);
+            Hats.Add(roomHat);
         }
         if (ImGui.Button("load wearable")) {
+            //AsepriteFile file = AsepriteFileLoader.FromFile(HatsPlusPlus2.GetPathFixed("niko.aseprite"));
+            //Rgba32[] framePixels = file.Frames[0].FlattenFrame(onlyVisibleLayers: true, includeBackgroundLayer: false, includeTilemapCels: false);
+
+            //var teamsBitmap = TeamsStorage.LoadTeamsBitmap(HatsPlusPlus2.GetPathFixed("niko.png"), new IVector2(32)).Unwrap();
             var hatData = JsonConvert.DeserializeObject<HatData>(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("data.json")));
-            script = new Script(MoonSharp.Interpreter.CoreModules.Preset_Complete);
+            var script = new Script(MoonSharp.Interpreter.CoreModules.Preset_Complete);
             LuaUtils.LoadApi(script);
             var wearableHat = WearableHat.New(script, teamsBitmap, hatData.elements[0].wearable);
-            var text = File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("LuaScripts\\wearable.lua"));
+            var text = File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("LuaScripts\\skebob.lua"));
             var state = script.DoString(text, null, "wearable");
             Hats.Add(wearableHat, state);
             LuaUtils.UpdateDucks(script);
@@ -151,20 +172,15 @@ public class Updater {
                 LuaLogger.Log($"Error: {e.DecoratedMessage ?? e.Message}");
             }
             this.wearableHat = wearableHat;
-
+            this.script = script;
         }
-        if (ImGui.Button("load hat")) {
-            var bitmap = Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>("animation.png"));
-            teamsBitmap = TeamsStorage.LoadTeamsBitmap(bitmap, new IVector2(32)).UnwrapOk();
-            var rock = new ScoreRock(0, 0, Profiles.DefaultPlayer1);
+        if (ImGui.Button("rock n roll bitch")) {
+            var bitmap = Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>("rock.png"));
+            //var team = TeamsStorage.BitmapToTeam(bitmap, "team").UnwrapOk();
+            var profile = Ducks.MainDuck.profile;
+            profile.team.hat.texture = Teams.all.Find(x => x.hat.texture.textureName == "hats/noHat").hat.texture; 
+            var rock = new ScoreRock(20, 20, profile);
             Level.Add(rock);
-            var hat = DepthAnimHat.New(teamsBitmap, rock);
-            var frames = Enumerable.Range(0, 8).Map((frame) => AnimFrame.New(frame)).ToList();
-            var framesRev = Enumerable.Range(0, 8).Map((frame) => AnimFrame.New(frame)).Rev().ToList();
-            hat.sprite.addAnim(Animation.New("normal", 1f/60f*4f, false, frames));
-            hat.sprite.addAnim(Animation.New("rev", 1f/60f*4f, false, framesRev));
-            Hats.Add(hat);
-            this.hat = hat;
         }
         if (this.hat.ValueUnsafe() is var _hat && this.hat.IsSome) {
             ImGui.Text(_hat.sprite.timeAccumulator.ToString());

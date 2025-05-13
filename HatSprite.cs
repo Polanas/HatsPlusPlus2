@@ -11,12 +11,12 @@ using MoonSharp.Interpreter.Interop;
 namespace HatsPlusPlus;
 
 
-public enum ClearState { 
+internal enum ClearState { 
     Yes = 1, No
 }
 
 [MoonSharpUserData]
-public class HatSprite
+internal class HatSprite
 {
     public bool Finished => finished;
     public bool FrameChanged { get; private set; }

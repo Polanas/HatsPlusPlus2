@@ -5,6 +5,8 @@ VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "mod", "mod.csproj", "{B07BDC3C-3770-4A07-90D8-5C2A68E2172B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AsepriteDotNet", "..\..\..\..\..\source\repos\AsepriteDotNet\source\AsepriteDotNet\AsepriteDotNet.csproj", "{72E72055-FD4B-4680-BDB3-452FADDE1089}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,8 +23,19 @@ Global
 		{B07BDC3C-3770-4A07-90D8-5C2A68E2172B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B07BDC3C-3770-4A07-90D8-5C2A68E2172B}.Release|x86.ActiveCfg = Release|x86
 		{B07BDC3C-3770-4A07-90D8-5C2A68E2172B}.Release|x86.Build.0 = Release|x86
+		{72E72055-FD4B-4680-BDB3-452FADDE1089}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72E72055-FD4B-4680-BDB3-452FADDE1089}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72E72055-FD4B-4680-BDB3-452FADDE1089}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{72E72055-FD4B-4680-BDB3-452FADDE1089}.Debug|x86.Build.0 = Debug|Any CPU
+		{72E72055-FD4B-4680-BDB3-452FADDE1089}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72E72055-FD4B-4680-BDB3-452FADDE1089}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72E72055-FD4B-4680-BDB3-452FADDE1089}.Release|x86.ActiveCfg = Release|Any CPU
+		{72E72055-FD4B-4680-BDB3-452FADDE1089}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B973865F-68C9-4582-8ABA-0B8ACCD481EF}
 	EndGlobalSection
 EndGlobal

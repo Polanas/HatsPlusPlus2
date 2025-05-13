@@ -32,7 +32,7 @@ namespace Coroutines
     /// <summary>
     /// A container for running multiple routines in parallel. Coroutines can be nested.
     /// </summary>
-    public class CoroutineRunner
+    internal class CoroutineRunner
     {
         List<IEnumerator> running = new List<IEnumerator>();
         List<float> delays = new List<float>();
@@ -43,7 +43,7 @@ namespace Coroutines
         /// <returns>A handle to the new coroutine.</returns>
         /// <param name="delay">How many seconds to delay before starting.</param>
         /// <param name="routine">The routine to run.</param>
-        public CoroutineHandle Run(float delay, IEnumerator routine)
+        internal CoroutineHandle Run(float delay, IEnumerator routine)
         {
             running.Add(routine);
             delays.Add(delay);
@@ -55,7 +55,7 @@ namespace Coroutines
         /// </summary>
         /// <returns>A handle to the new coroutine.</returns>
         /// <param name="routine">The routine to run.</param>
-        public CoroutineHandle Run(IEnumerator routine)
+        internal CoroutineHandle Run(IEnumerator routine)
         {
             return Run(0f, routine);
         }
@@ -65,7 +65,7 @@ namespace Coroutines
         /// </summary>
         /// <returns>True if the routine was actually stopped.</returns>
         /// <param name="routine">The routine to stop.</param>
-        public bool Stop(IEnumerator routine)
+        internal bool Stop(IEnumerator routine)
         {
             int i = running.IndexOf(routine);
             if (i < 0)
@@ -80,7 +80,7 @@ namespace Coroutines
         /// </summary>
         /// <returns>True if the routine was actually stopped.</returns>
         /// <param name="routine">The routine to stop.</param>
-        public bool Stop(CoroutineHandle routine)
+        internal bool Stop(CoroutineHandle routine)
         {
             return routine.Stop();
         }
@@ -88,7 +88,7 @@ namespace Coroutines
         /// <summary>
         /// Stop all running routines.
         /// </summary>
-        public void StopAll()
+        internal void StopAll()
         {
             running.Clear();
             delays.Clear();
@@ -99,7 +99,7 @@ namespace Coroutines
         /// </summary>
         /// <returns>True if the routine is running.</returns>
         /// <param name="routine">The routine to check.</param>
-        public bool IsRunning(IEnumerator routine)
+        internal bool IsRunning(IEnumerator routine)
         {
             return running.Contains(routine);
         }
@@ -109,7 +109,7 @@ namespace Coroutines
         /// </summary>
         /// <returns>True if the routine is running.</returns>
         /// <param name="routine">The routine to check.</param>
-        public bool IsRunning(CoroutineHandle routine)
+        internal bool IsRunning(CoroutineHandle routine)
         {
             return routine.IsRunning;
         }
@@ -119,7 +119,7 @@ namespace Coroutines
         /// </summary>
         /// <returns>True if any routines were updated.</returns>
         /// <param name="deltaTime">How many seconds have passed sinced the last update.</param>
-        public bool Update(float deltaTime)
+        internal bool Update(float deltaTime)
         {
             if (running.Count > 0)
             {
@@ -159,7 +159,7 @@ namespace Coroutines
         /// <summary>
         /// How many coroutines are currently running.
         /// </summary>
-        public int Count
+        internal int Count
         {
             get { return running.Count; }
         }
@@ -168,24 +168,24 @@ namespace Coroutines
     /// <summary>
     /// A handle to a (potentially running) coroutine.
     /// </summary>
-    public struct CoroutineHandle
+    internal struct CoroutineHandle
     {
         /// <summary>
         /// Reference to the routine's runner.
         /// </summary>
-        public CoroutineRunner Runner;
+        internal CoroutineRunner Runner;
 
         /// <summary>
         /// Reference to the routine's enumerator.
         /// </summary>
-        public IEnumerator Enumerator;
+        internal IEnumerator Enumerator;
 
         /// <summary>
         /// Construct a coroutine. Never call this manually, only use return values from Coroutines.Run().
         /// </summary>
         /// <param name="runner">The routine's runner.</param>
         /// <param name="enumerator">The routine's enumerator.</param>
-        public CoroutineHandle(CoroutineRunner runner, IEnumerator enumerator)
+        internal CoroutineHandle(CoroutineRunner runner, IEnumerator enumerator)
         {
             Runner = runner;
             Enumerator = enumerator;
@@ -195,7 +195,7 @@ namespace Coroutines
         /// Stop this coroutine if it is running.
         /// </summary>
         /// <returns>True if the coroutine was stopped.</returns>
-        public bool Stop()
+        internal bool Stop()
         {
             return IsRunning && Runner.Stop(Enumerator);
         }
@@ -204,7 +204,7 @@ namespace Coroutines
         /// A routine to wait until this coroutine has finished running.
         /// </summary>
         /// <returns>The wait enumerator.</returns>
-        public IEnumerator Wait()
+        internal IEnumerator Wait()
         {
             if (Enumerator != null)
                 while (Runner.IsRunning(Enumerator))
@@ -214,7 +214,7 @@ namespace Coroutines
         /// <summary>
         /// True if the enumerator is currently running.
         /// </summary>
-        public bool IsRunning
+        internal bool IsRunning
         {
             get { return Enumerator != null && Runner.IsRunning(Enumerator); }
         }

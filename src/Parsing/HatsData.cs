@@ -11,7 +11,7 @@ using System.Runtime.Serialization;
 #nullable enable
 namespace HatsPlusPlus.Parsing;
 
-public enum HatType {
+internal enum HatType {
     Wearable,
     Wings,
     Extra,
@@ -20,13 +20,13 @@ public enum HatType {
     Room,
     Preview,
 }
-public enum LinkFrameState {
+internal enum LinkFrameState {
     Default,
     Saved,
     Inverted,
 }
 
-public struct WearableHatData {
+internal struct WearableHatData {
     [JsonProperty(PropertyName = "base")]
     public HatBaseData baseData;
     [JsonProperty(PropertyName = "strapped_on")]
@@ -34,7 +34,7 @@ public struct WearableHatData {
     public List<Animation> animations;
 }
 
-public struct HatBaseData {
+internal struct HatBaseData {
     [JsonProperty(PropertyName = "hat_type")]
     public HatType hatType;
     [JsonProperty(PropertyName = "frame_size")]
@@ -45,17 +45,25 @@ public struct HatBaseData {
     public string? localScriptPath;
 }
 
-public struct PetBaseData {
+internal struct RoomHatData {
+    [JsonProperty(PropertyName = "base")]
+    public HatBaseData baseData;
+}
+
+internal struct PetBaseData {
     public int distance;
     public bool flipped;
 }
 
-public struct HatElementData {
+internal struct HatElementData {
     [JsonProperty(PropertyName = "Wearable")]
     public WearableHatData wearable;
+    //TODO: sync property names with the editor
+    [JsonProperty(PropertyName = "Room")]
+    public RoomHatData room;
 }
 
-public struct HatData {
+internal struct HatData {
     public List<HatElementData> elements;
     public string name;
 }

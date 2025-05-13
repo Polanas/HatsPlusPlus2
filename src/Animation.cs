@@ -24,7 +24,7 @@ public enum AnimType {
 }
 
 [MoonSharpUserData]
-public record struct AnimFrame {
+internal record struct AnimFrame {
     [MoonSharpVisible(true)]
     public int value;
     [MoonSharpVisible(true)]
@@ -62,7 +62,7 @@ public record struct AnimFrame {
 };
 
 [MoonSharpUserData]
-public struct Animation {
+internal struct Animation {
     public string name;
     public float delay;
     public bool looping;

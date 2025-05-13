@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace HatsPlusPlus; 
 
-public static class BoolExtensions {
+internal static class BoolExtensions {
     /// <summary>
     /// Returns Some(t) if the bool is true, or None otherwise.
     /// </summary>
-    public static Option<T> Then<T>(this bool boolean, T t) {
+    internal static Option<T> Then<T>(this bool boolean, T t) {
         if (boolean) {
             return t;
         }
@@ -18,7 +18,7 @@ public static class BoolExtensions {
     /// <summary>
     /// Returns Some(func()) if the bool is true, or None otherwise.
     /// </summary>
-    public static Option<T> ThenSome<T>(this bool boolean, Func<T> func) {
+    internal static Option<T> ThenSome<T>(this bool boolean, Func<T> func) {
         if (boolean) {
             return func();
         }
@@ -26,58 +26,58 @@ public static class BoolExtensions {
     }
 }
 
-public static class ListExtensions {
-    public static Option<T> Get<T>(this List<T> list, int index) {
+internal static class ListExtensions {
+    internal static Option<T> Get<T>(this List<T> list, int index) {
         return (index < list.Count).ThenSome(() => list[index]);
     }
-    public static T RemoveAndGet<T>(this IList<T> list, int index) {
+    internal static T RemoveAndGet<T>(this IList<T> list, int index) {
         T value = list[index];
         list.RemoveAt(index);
         return value;
     }
 }
 
-public static class ArrayExtensions {
-    public static Option<T> Get<T>(this T[] array, int index) {
+internal static class ArrayExtensions {
+    internal static Option<T> Get<T>(this T[] array, int index) {
         return (index < array.Length).ThenSome(() => array[index]);
     }
 }
 
-public static class OptionExtensions {
-    public static Option<U> AndThen<T, U>(this Option<T> self, Func<T, Option<U>> func) {
+internal static class OptionExtensions {
+    internal static Option<U> AndThen<T, U>(this Option<T> self, Func<T, Option<U>> func) {
         return self.Match(
             (value) => func(value),
             () => None
         );
     }
 
-    public static T ValueOr<T>(this Option<T> self, T value) {
+    internal static T ValueOr<T>(this Option<T> self, T value) {
         return self.Match(
             (value) => value,
             () => value);
     }
 
-    public static T ValueOrUnsafe<T>(this Option<T> self, T value) {
+    internal static T ValueOrUnsafe<T>(this Option<T> self, T value) {
         return self.MatchUnsafe(
             (value) => value,
             () => value);
     }
 
-    public static T ValueOrElse<T>(this Option<T> self, Func<T> func) {
+    internal static T ValueOrElse<T>(this Option<T> self, Func<T> func) {
         return self.Match(
             (value) => value,
             () => func());
     }
 
-    public static T ValueOrElseUnsafe<T>(this Option<T> self, Func<T> func) {
+    internal static T ValueOrElseUnsafe<T>(this Option<T> self, Func<T> func) {
         return self.MatchUnsafe(
             (value) => value,
             () => func());
     }
 }
 
-public static class DictionaryExt {
-    public static Option<TValue> RemoveGet<TKey, TValue>(this Dictionary<TKey, TValue> self, TKey key) {
+internal static class DictionaryExt {
+    internal static Option<TValue> RemoveGet<TKey, TValue>(this Dictionary<TKey, TValue> self, TKey key) {
         self.TryGetValue(key, out var value);
         var isRemoved = self.Remove(key);
         if (isRemoved) {
@@ -87,7 +87,7 @@ public static class DictionaryExt {
         }
     }
 
-    public static Option<V> Get<K,V>(this Dictionary<K,V> dict, K key) {
+    internal static Option<V> Get<K,V>(this Dictionary<K,V> dict, K key) {
         if (dict.TryGetValue(key, out var value)) {
             return value;
         }
@@ -95,28 +95,32 @@ public static class DictionaryExt {
     }
 }
 
-public class CalledUnwrapOnNoneValueException : Exception { }
-public class CalledUnwrapOkOnErr : Exception {
-    public string message;
-    public CalledUnwrapOkOnErr(string message) : base(message)
+internal class CalledUnwrapOnNoneValueException : Exception { }
+internal class CalledUnwrapOkOnErr : Exception {
+    internal string message;
+    internal CalledUnwrapOkOnErr(string message) : base(message)
     {
         this.message = message;
     }
 }
 
-public class CalledUnwrapErrOnOk() : Exception { }
+internal class CalledUnwrapErrOnOk() : Exception { }
 
-public static class Extensions {
-    public static T Unwrap<T>(this Option<T> option) {
+internal static class Extensions {
+    internal static T Unwrap<T>(this Option<T> option) {
         return option.IfNone(() => throw new CalledUnwrapOnNoneValueException());
     }
 
-    public static L UnwrapOk<L>(this Either<L,string> either)
+    internal static T Expect<T>(this Option<T> option, string message) {
+        return option.IfNone(() => throw new Exception(message));
+    }
+
+    internal static L UnwrapOk<L>(this Either<L,string> either)
     {
         return either.IfRight((err) => throw new CalledUnwrapOkOnErr(err));
     }
 
-    public static string UnwrapErr<L>(this Either<L,string> either)
+    internal static string UnwrapErr<L>(this Either<L,string> either)
     {
         return either.IfLeft((_) => throw new CalledUnwrapErrOnOk());
     }

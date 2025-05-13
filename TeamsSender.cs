@@ -8,21 +8,21 @@ using System.Linq;
 
 namespace HatsPlusPlus;
 
-public struct ProfileId {
-    public string value;
+internal struct ProfileId {
+    internal string value;
 
-    public static ProfileId New(string value) {
+    internal static ProfileId New(string value) {
         return new ProfileId {
             value = value
         };
     }
 }
 
-public struct SenderTeamData {
-    public TeamHandle handle;
-    public Dictionary<ProfileId, bool> loadedForProfiles;
+internal struct SenderTeamData {
+    internal TeamHandle handle;
+    internal Dictionary<ProfileId, bool> loadedForProfiles;
 
-    public static SenderTeamData New(TeamHandle handle) {
+    internal static SenderTeamData New(TeamHandle handle) {
         return new SenderTeamData {
             handle = handle,
             loadedForProfiles = []
@@ -36,10 +36,10 @@ enum ProfileChangeKind {
 }
 
 struct TeamNetMessage {
-    public TeamHandle handle;
-    public Option<Profile> receiver;
+    internal TeamHandle handle;
+    internal Option<Profile> receiver;
 
-    public static TeamNetMessage New(TeamHandle handle, Option<Profile> receiver) {
+    internal static TeamNetMessage New(TeamHandle handle, Option<Profile> receiver) {
         return new TeamNetMessage {
             handle = handle,
             receiver = receiver,
@@ -47,13 +47,13 @@ struct TeamNetMessage {
     }
 }
 
-public enum SendingState {
+internal enum SendingState {
     Sending,
     FinishedSending,
     NotSending,
 }
 
-public static class TeamsSender {
+internal static class TeamsSender {
     static CoroutineRunner coroutines;
     static Dictionary<TeamHandle, SenderTeamData> loadedTeams = [];
     static List<Profile> lastActiveProfiles = [];
@@ -78,7 +78,7 @@ public static class TeamsSender {
                 messageOption = nextMessage;
             }
 
-            if (teamDataOption.Value() is var teamData && teamDataOption.IsSome
+            if (teamDataOption.ValueUnsafe() is var teamData && teamDataOption.IsSome
                 && messageOption.Value() is var message && messageOption.IsSome) {
                 Send.Message(new NMSpecialHat(teamData.team, message.receiver.ValueOrUnsafe(null)));
             }
@@ -86,12 +86,12 @@ public static class TeamsSender {
         }
     }
 
-    public static void Init() {
+    internal static void Init() {
         coroutines = new CoroutineRunner();
         coroutines.Run(SendTeamsCoroutine());
     }
 
-    public static void AddTeam(TeamHandle handle) {
+    internal static void AddTeam(TeamHandle handle) {
         loadedTeams.Add(handle, SenderTeamData.New(handle));
         if (Profiles.active.Count == 1 && Profiles.active[0] == DuckNetwork.localProfile) {
             return;
@@ -100,11 +100,19 @@ public static class TeamsSender {
         sendQueue.Add(TeamNetMessage.New(handle, None));
     }
 
-    public static void RemoveTeam(TeamHandle handle) {
+    internal static void RemoveTeam(TeamHandle handle) {
         loadedTeams.Remove(handle);
     }
 
-    public static void Update(GameTime gameTime) {
+    internal static void RemoveAllFromQueue(System.Predicate<TeamNetMessage> predicate) {
+        sendQueue.RemoveAll(predicate);
+    }
+
+    internal static void RemoveTeamFromQueue(TeamHandle handle) {
+        sendQueue.RemoveAll((m) => m.handle.id == handle.id && m.handle.gen == handle.gen);
+    }
+
+    internal static void Update(GameTime gameTime) {
         if (!DuckNetwork.active) {
             return;
         }

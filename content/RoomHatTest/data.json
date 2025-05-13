@@ -1,0 +1,18 @@
+{
+    "elements": [
+      {
+        "Room": {
+          "base": {
+            "hat_type": "Room",
+            "frame_size": [
+              141,
+              87
+            ],
+            "local_image_path": "room.png",
+            "local_script_path": null
+          }
+        }
+      }
+    ],
+    "name": "MyHat"
+  }

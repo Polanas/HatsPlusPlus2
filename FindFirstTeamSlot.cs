@@ -9,9 +9,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace HatsPlusPlus;
-public static class FindFirstTeamSlot {
-    public static IEnumerator Find() {
-        var emptyTeam = TeamsStorage.BitmapToTeam(Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>("empty.png")), "empty").UnwrapOk();
+internal static class FindFirstTeamSlot {
+    internal static IEnumerator Find() {
+        var emptyTeam = TeamsStorage.BitmapToTeam(Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>("empty.png")), "empty").Unwrap();
         Teams.AddExtraTeam(emptyTeam);
         var customTeamIndex = (ushort)Teams.core.extraTeams.IndexOf(emptyTeam);
         Send.Message(new NMSpecialHat(emptyTeam, DuckNetwork.localProfile, false));

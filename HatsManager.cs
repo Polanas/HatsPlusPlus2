@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace HatsPlusPlus; 
 
-public class SelectedHat {
+internal class SelectedHat {
 
 }
 //Controls how entire hats are loaded and used, so it's higher level than Hats
-public static class HatsManager {
+internal static class HatsManager {
 }

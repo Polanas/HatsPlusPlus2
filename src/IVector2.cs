@@ -25,33 +25,33 @@ namespace HatsPlusPlus;
 /// </remarks>
 [Serializable]
 [StructLayout(LayoutKind.Sequential)]
-public struct IVector2 : IEquatable<IVector2>
+internal struct IVector2 : IEquatable<IVector2>
 {
     /// <summary>
     /// The X component of the Vector2i.
     /// </summary>
-    public int X;
+    internal int X;
 
     /// <summary>
     /// The Y component of the Vector2i.
     /// </summary>
-    public int Y;
+    internal int Y;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="IVector2"/> struct.
     /// </summary>
     /// <param name="value">The value that will initialize this instance.</param>
-    public IVector2(int value)
+    internal IVector2(int value)
     {
         X = value;
         Y = value;
     }
 
-    public static IVector2 New(int x, int y) {
+    internal static IVector2 New(int x, int y) {
         return new IVector2(x, y);
     }
 
-    public static IVector2 New(int x) {
+    internal static IVector2 New(int x) {
         return new IVector2(x);
     }
 
@@ -60,7 +60,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// </summary>
     /// <param name="x">The X component of the Vector2i.</param>
     /// <param name="y">The Y component of the Vector2i.</param>
-    public IVector2(int x, int y)
+    internal IVector2(int x, int y)
     {
         X = x;
         Y = y;
@@ -71,7 +71,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// </summary>
     /// <param name="index">The index of the component from the vector.</param>
     /// <exception cref="IndexOutOfRangeException">Thrown if the index is less than 0 or greater than 1.</exception>
-    public int this[int index]
+    internal int this[int index]
     {
         get
         {
@@ -108,47 +108,47 @@ public struct IVector2 : IEquatable<IVector2>
     /// <summary>
     /// Gets the manhattan length of the vector.
     /// </summary>
-    public int ManhattanLength => Math.Abs(X) + Math.Abs(Y);
+    internal int ManhattanLength => Math.Abs(X) + Math.Abs(Y);
 
     /// <summary>
     /// Gets the squared euclidean length of the vector.
     /// </summary>
-    public int EuclideanLengthSquared => (X * X) + (Y * Y);
+    internal int EuclideanLengthSquared => (X * X) + (Y * Y);
 
     /// <summary>
     /// Gets the euclidean length of the vector.
     /// </summary>
-    public float EuclideanLength => (float)Math.Sqrt((X * X) + (Y * Y));
+    internal float EuclideanLength => (float)Math.Sqrt((X * X) + (Y * Y));
 
     /// <summary>
     /// Gets the perpendicular vector on the right side of this vector.
     /// </summary>
-    public IVector2 PerpendicularRight => new IVector2(Y, -X);
+    internal IVector2 PerpendicularRight => new IVector2(Y, -X);
 
     /// <summary>
     /// Gets the perpendicular vector on the left side of this vector.
     /// </summary>
-    public IVector2 PerpendicularLeft => new IVector2(-Y, X);
+    internal IVector2 PerpendicularLeft => new IVector2(-Y, X);
 
     /// <summary>
     /// Defines a unit-length <see cref="IVector2"/> that points towards the X-axis.
     /// </summary>
-    public static readonly IVector2 UnitX = new IVector2(1, 0);
+    internal static readonly IVector2 UnitX = new IVector2(1, 0);
 
     /// <summary>
     /// Defines a unit-length <see cref="IVector2"/> that points towards the Y-axis.
     /// </summary>
-    public static readonly IVector2 UnitY = new IVector2(0, 1);
+    internal static readonly IVector2 UnitY = new IVector2(0, 1);
 
     /// <summary>
     /// Defines an instance with all components set to 0.
     /// </summary>
-    public static readonly IVector2 Zero = new IVector2(0, 0);
+    internal static readonly IVector2 Zero = new IVector2(0, 0);
 
     /// <summary>
     /// Defines an instance with all components set to 1.
     /// </summary>
-    public static readonly IVector2 One = new IVector2(1, 1);
+    internal static readonly IVector2 One = new IVector2(1, 1);
 
     /// <summary>
     /// Adds two vectors.
@@ -157,7 +157,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="b">Right operand.</param>
     /// <returns>Result of operation.</returns>
     [Pure]
-    public static IVector2 Add(IVector2 a, IVector2 b)
+    internal static IVector2 Add(IVector2 a, IVector2 b)
     {
         Add(in a, in b, out a);
         return a;
@@ -169,7 +169,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="a">Left operand.</param>
     /// <param name="b">Right operand.</param>
     /// <param name="result">Result of operation.</param>
-    public static void Add(in IVector2 a, in IVector2 b, out IVector2 result)
+    internal static void Add(in IVector2 a, in IVector2 b, out IVector2 result)
     {
         result.X = a.X + b.X;
         result.Y = a.Y + b.Y;
@@ -182,7 +182,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="b">Second operand.</param>
     /// <returns>Result of subtraction.</returns>
     [Pure]
-    public static IVector2 Subtract(IVector2 a, IVector2 b)
+    internal static IVector2 Subtract(IVector2 a, IVector2 b)
     {
         Subtract(in a, in b, out a);
         return a;
@@ -194,7 +194,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="a">First operand.</param>
     /// <param name="b">Second operand.</param>
     /// <param name="result">Result of subtraction.</param>
-    public static void Subtract(in IVector2 a, in IVector2 b, out IVector2 result)
+    internal static void Subtract(in IVector2 a, in IVector2 b, out IVector2 result)
     {
         result.X = a.X - b.X;
         result.Y = a.Y - b.Y;
@@ -207,7 +207,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="scale">Right operand.</param>
     /// <returns>Result of the operation.</returns>
     [Pure]
-    public static IVector2 Multiply(IVector2 vector, int scale)
+    internal static IVector2 Multiply(IVector2 vector, int scale)
     {
         Multiply(in vector, scale, out vector);
         return vector;
@@ -219,7 +219,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="vector">Left operand.</param>
     /// <param name="scale">Right operand.</param>
     /// <param name="result">Result of the operation.</param>
-    public static void Multiply(in IVector2 vector, int scale, out IVector2 result)
+    internal static void Multiply(in IVector2 vector, int scale, out IVector2 result)
     {
         result.X = vector.X * scale;
         result.Y = vector.Y * scale;
@@ -232,7 +232,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="scale">Right operand.</param>
     /// <returns>Result of the operation.</returns>
     [Pure]
-    public static IVector2 Multiply(IVector2 vector, IVector2 scale)
+    internal static IVector2 Multiply(IVector2 vector, IVector2 scale)
     {
         Multiply(in vector, in scale, out vector);
         return vector;
@@ -244,7 +244,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="vector">Left operand.</param>
     /// <param name="scale">Right operand.</param>
     /// <param name="result">Result of the operation.</param>
-    public static void Multiply(in IVector2 vector, in IVector2 scale, out IVector2 result)
+    internal static void Multiply(in IVector2 vector, in IVector2 scale, out IVector2 result)
     {
         result.X = vector.X * scale.X;
         result.Y = vector.Y * scale.Y;
@@ -257,7 +257,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="scale">Right operand.</param>
     /// <returns>Result of the operation.</returns>
     [Pure]
-    public static IVector2 Divide(IVector2 vector, int scale)
+    internal static IVector2 Divide(IVector2 vector, int scale)
     {
         Divide(in vector, scale, out vector);
         return vector;
@@ -269,7 +269,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="vector">Left operand.</param>
     /// <param name="scale">Right operand.</param>
     /// <param name="result">Result of the operation.</param>
-    public static void Divide(in IVector2 vector, int scale, out IVector2 result)
+    internal static void Divide(in IVector2 vector, int scale, out IVector2 result)
     {
         result.X = vector.X / scale;
         result.Y = vector.Y / scale;
@@ -282,7 +282,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="scale">Right operand.</param>
     /// <returns>Result of the operation.</returns>
     [Pure]
-    public static IVector2 Divide(IVector2 vector, IVector2 scale)
+    internal static IVector2 Divide(IVector2 vector, IVector2 scale)
     {
         Divide(in vector, in scale, out vector);
         return vector;
@@ -294,7 +294,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="vector">Left operand.</param>
     /// <param name="scale">Right operand.</param>
     /// <param name="result">Result of the operation.</param>
-    public static void Divide(in IVector2 vector, in IVector2 scale, out IVector2 result)
+    internal static void Divide(in IVector2 vector, in IVector2 scale, out IVector2 result)
     {
         result.X = vector.X / scale.X;
         result.Y = vector.Y / scale.Y;
@@ -307,7 +307,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="b">Second operand.</param>
     /// <returns>The component-wise minimum.</returns>
     [Pure]
-    public static IVector2 ComponentMin(IVector2 a, IVector2 b)
+    internal static IVector2 ComponentMin(IVector2 a, IVector2 b)
     {
         a.X = Math.Min(a.X, b.X);
         a.Y = Math.Min(a.Y, b.Y);
@@ -320,7 +320,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="a">First operand.</param>
     /// <param name="b">Second operand.</param>
     /// <param name="result">The component-wise minimum.</param>
-    public static void ComponentMin(in IVector2 a, in IVector2 b, out IVector2 result)
+    internal static void ComponentMin(in IVector2 a, in IVector2 b, out IVector2 result)
     {
         result.X = Math.Min(a.X, b.X);
         result.Y = Math.Min(a.Y, b.Y);
@@ -333,7 +333,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="b">Second operand.</param>
     /// <returns>The component-wise maximum.</returns>
     [Pure]
-    public static IVector2 ComponentMax(IVector2 a, IVector2 b)
+    internal static IVector2 ComponentMax(IVector2 a, IVector2 b)
     {
         a.X = Math.Max(a.X, b.X);
         a.Y = Math.Max(a.Y, b.Y);
@@ -346,7 +346,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="a">First operand.</param>
     /// <param name="b">Second operand.</param>
     /// <param name="result">The component-wise maximum.</param>
-    public static void ComponentMax(in IVector2 a, in IVector2 b, out IVector2 result)
+    internal static void ComponentMax(in IVector2 a, in IVector2 b, out IVector2 result)
     {
         result.X = Math.Max(a.X, b.X);
         result.Y = Math.Max(a.Y, b.Y);
@@ -360,7 +360,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="max">Maximum vector.</param>
     /// <returns>The clamped vector.</returns>
     [Pure]
-    public static IVector2 Clamp(IVector2 vec, IVector2 min, IVector2 max)
+    internal static IVector2 Clamp(IVector2 vec, IVector2 min, IVector2 max)
     {
         vec.X = MathHelper.Clamp(vec.X, min.X, max.X);
         vec.Y = MathHelper.Clamp(vec.Y, min.Y, max.Y);
@@ -374,13 +374,13 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="min">Minimum vector.</param>
     /// <param name="max">Maximum vector.</param>
     /// <param name="result">The clamped vector.</param>
-    public static void Clamp(in IVector2 vec, in IVector2 min, in IVector2 max, out IVector2 result)
+    internal static void Clamp(in IVector2 vec, in IVector2 min, in IVector2 max, out IVector2 result)
     {
         result.X = MathHelper.Clamp(vec.X, min.X, max.X);
         result.Y = MathHelper.Clamp(vec.Y, min.Y, max.Y);
     }
 
-    public IVector2 Yx
+    internal IVector2 Yx
     {
         get => new IVector2(Y, X);
         set
@@ -560,7 +560,7 @@ public struct IVector2 : IEquatable<IVector2>
     /// <param name="x">The X component of the vector.</param>
     /// <param name="y">The Y component of the vector.</param>
     [Pure]
-    public void Deconstruct(out int x, out int y)
+    internal void Deconstruct(out int x, out int y)
     {
         x = X;
         y = Y;
