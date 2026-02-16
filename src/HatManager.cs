@@ -195,11 +195,6 @@ internal static class HatManager {
             var dirInfo = new DirectoryInfo(hatsDir);
 
             foreach (var hatDir in dirInfo.GetDirectories()) {
-                var hatMarkerPath = Path.Combine(hatDir.FullName, "hpp_hat_marker");
-                if (!File.Exists(hatMarkerPath)) {
-                    continue;
-                }
-
                 var imagesDir = Path.Combine(hatDir.FullName, "images");
                 if (!Directory.Exists(imagesDir)) {
                     LuaLogger.Warn($"While loading a hat at {hatDir}: images directory not found");
