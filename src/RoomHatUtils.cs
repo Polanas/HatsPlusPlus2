@@ -54,13 +54,47 @@ internal static class RoomHatUtils {
 
         foreach (var (roomType, fileName) in roomTypes.Zip(fileNames)) {
             var bitmap = Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>($"RoomMasks\\{fileName}.png"));
-            masks[(VanillaRoomType)roomType] = bitmap;
+            masks[(VanillaRoomType)roomType] = bitmap.Unwrap();
         }
     }
 
+    internal const int BAR_ID = 187;
+    internal const int NORMAL_ID = 105;
+    internal const int BIOS_ID = 162;
+    internal const int BATH_ID = 47;
+    internal const int FANCY_ID = 26;
+    internal const int CRAPPY_ID = 63;
+    internal const int GREENHOUSE_ID = 186;
+    internal const int FREEZER_ID = 184;
+    internal const int MUSIC_ID = 185;
+    internal const int OFFICE_ID = 169;
+    internal const int FOREST_ID = 130;
+    internal const int SHIP_ID = 174;
+    internal const int STONE_ID = 140;
+
     internal static Option<VanillaRoomType> CurrentRoomType() {
-        //TODO: implement this
-        return VanillaRoomType.Oldstone;
+        var furniPositions = Ducks.mainDuck.profile.furniturePositions;
+        Option<VanillaRoomType> roomType = None;
+        foreach (var furni in furniPositions) {
+            roomType = furni.id switch {
+                BAR_ID => VanillaRoomType.Bar,
+                NORMAL_ID => VanillaRoomType.Basic,
+                BIOS_ID => VanillaRoomType.Bios,
+                BATH_ID => VanillaRoomType.Tiles,
+                FANCY_ID => VanillaRoomType.Fancy,
+                CRAPPY_ID => VanillaRoomType.Oldwood,
+                GREENHOUSE_ID => VanillaRoomType.Greenhouse,
+                FREEZER_ID => VanillaRoomType.Freezer,
+                MUSIC_ID => VanillaRoomType.Music,
+                OFFICE_ID => VanillaRoomType.Office,
+                FOREST_ID => VanillaRoomType.Tree,
+                SHIP_ID => VanillaRoomType.Ship,
+                STONE_ID => VanillaRoomType.Oldstone,
+                _ => None,
+            };
+        }
+
+        return roomType;
     }
 
     internal static Option<RoomInfo> GetRoomInfo(Bitmap roomSprite) {
@@ -69,7 +103,7 @@ internal static class RoomHatUtils {
             return None;
         }
 
-        var profileBoxRect = teamSelect._profiles.First((p) => p.profile == Ducks.MainDuck.profile).rectangle;
+        var profileBoxRect = teamSelect._profiles.First((p) => p.profile == Ducks.mainDuck.profile).rectangle;
         var roomFlipped = new Vec2(profileBoxRect.x, profileBoxRect.y) switch {
             Vec2 { x: 1, y: 1 } => false,
             Vec2 { x: 1, y: 90 } => false,
@@ -104,10 +138,9 @@ internal static class RoomHatUtils {
             }
         }
 
-        var profileId = Ducks.ProfileId;
         return new RoomInfo {
-            fg = TeamsStorage.LoadTeamsBitmap(fg, roomSize, TeamType.Chopped, ChopMode.Simple),
-            bg = TeamsStorage.LoadTeamsBitmap(bg, roomSize, TeamType.Chopped, ChopMode.Simple),
+            fg = TeamsStorage.LoadTeams(fg, roomSize, None, ChopMode.Simple),
+            bg = TeamsStorage.LoadTeams(bg, roomSize, None, ChopMode.Simple),
             position = new Vec2(profileBoxRect.x, profileBoxRect.y)
         };
     }

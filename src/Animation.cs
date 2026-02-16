@@ -6,21 +6,21 @@ using System.Linq;
 
 namespace HatsPlusPlus;
 
-public enum AnimType {
-    OnDefault,
-    OnPressQuack,
-    OnReleaseQuack,
-    OnPetStop,
-    OnPetApproach,
-    OnDuckDeath,
-    OnDuckJump,
-    OnDuckLand,
-    OnDuckGlide,
-    OnDuckWalk,
-    OnDuckSneak,
-    OnDuckNetted,
-    OnDuckSpawned,
-    OnHatPickedUp,
+public static class AnimTypes {
+    public static string OnDefault = nameof(OnDefault);
+    public static string OnPressQuack = nameof(OnPressQuack);
+    public static string OnReleaseQuack = nameof(OnReleaseQuack);
+    public static string OnPetStop = nameof(OnPetStop);
+    public static string OnPetAppoach = nameof(OnPetAppoach);
+    public static string OnDuckDeath = nameof(OnDuckDeath);
+    public static string OnDuckJump = nameof(OnDuckJump);
+    public static string OnDuckLand = nameof(OnDuckLand);
+    public static string OnDuckGlide = nameof(OnDuckGlide);
+    public static string OnDuckWalk = nameof(OnDuckWalk);
+    public static string OnDuckSneak = nameof(OnDuckSneak);
+    public static string OnDuckNetted = nameof(OnDuckNetted);
+    public static string OnDuckSpawned = nameof(OnDuckSpawned);
+    public static string OnHatPickedUp = nameof(OnHatPickedUp);
 }
 
 [MoonSharpUserData]
@@ -68,7 +68,7 @@ internal struct Animation {
     public bool looping;
     public List<AnimFrame> frames;
     [JsonProperty(PropertyName = "anim_type")]
-    public AnimType? animType;
+    public string animType;
 
     public static Animation New(string name, float delay, bool looping, List<AnimFrame> frames) {
         return new Animation {

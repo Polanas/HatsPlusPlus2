@@ -12,7 +12,7 @@ internal struct ProfileIdUint {
 }
 
 internal static class Ducks {
-    internal static Duck MainDuck => DuckNetwork.localProfile?.duck ?? Profiles.DefaultPlayer1?.duck;
+    internal static Duck mainDuck;
 
     internal static ProfileIdUint ProfileId {
         get {
@@ -28,7 +28,7 @@ internal static class Ducks {
             ];
             for (uint i = 0; i < profiles.Count; i++) {
                 var profile = profiles[(int)i];
-                if (MainDuck.profile == profile) {
+                if (mainDuck.profile == profile) {
                     return new ProfileIdUint {
                         value = i + 1
                     };

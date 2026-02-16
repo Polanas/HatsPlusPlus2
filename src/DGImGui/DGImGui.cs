@@ -24,7 +24,7 @@ namespace DuckGame.CustomStuffHack.DGImGui
         public static ImFontPtr font;
         public static Updater updater;
 
-        public static void Initialize()
+        public static void Init()
         {
             _game = MonoMain.instance;
             GuiRenderer = new ImGuiRenderer(_game);
@@ -46,8 +46,6 @@ namespace DuckGame.CustomStuffHack.DGImGui
 
             GuiRenderer.BeginLayout(gameTime);
             updater.Draw(gameTime);
-
-            //ImGui.End();
 
             GuiRenderer.EndLayout();
         }

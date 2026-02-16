@@ -1,11 +1,13 @@
 ﻿using DuckGame;
 using StbImageSharp;
 using StbImageWriteSharp;
+using System;
 using System.IO;
 
 namespace HatsPlusPlus;
 
 internal class Bitmap {
+    internal IVector2 Size => new IVector2(Width, Height);
     internal int Width { get; private set; }
     internal int Height { get; private set; }
     internal byte[] Data { get; private set; }
@@ -20,11 +22,19 @@ internal class Bitmap {
         return new Bitmap(data, width, height);
     }
 
-    internal static Bitmap FromPath(string path) {
-        var image = ImageResult.FromStream(File.OpenRead(path), StbImageSharp.ColorComponents.RedGreenBlueAlpha);
-        var bitmap = Bitmap.FromMemory(image.Data, image.Width, image.Height);
-        bitmap.Path = path;
-        return bitmap;
+    internal static HResult<Bitmap> FromPath(string path) {
+        var ext = System.IO.Path.GetExtension(path);
+        if (ext != ".png") {
+            return Err<Bitmap>($"expected extension to be .png, got {ext}");
+        }
+        try {
+            var image = ImageResult.FromStream(File.OpenRead(path), StbImageSharp.ColorComponents.RedGreenBlueAlpha);
+            var bitmap = Bitmap.FromMemory(image.Data, image.Width, image.Height);
+            bitmap.Path = path;
+            return bitmap;
+        } catch (Exception e) {
+            return Err<Bitmap>($"could not load bitmap: {e.ToString()}");
+        }
     }
 
     private Bitmap(byte[] data, int width, int height) {
@@ -34,7 +44,7 @@ internal class Bitmap {
         Path = None;
     }
 
-    internal bool IsEqualTo(Bitmap other) {
+    internal bool SameAs(Bitmap other) {
         if (other.Width != Width || other.Height != Height) {
             return false;
         }
@@ -125,9 +135,9 @@ internal class Bitmap {
             Data[index * 4 + 3]);
     }
 
-    internal void SetPixel(IVector2 position, Color Color) {
+    internal Option<Unit> SetPixel(IVector2 position, Color Color) {
         if (position.X < 0 || position.Y < 0 || position.X >= Width || position.Y >= Height)
-            return;
+            return None;
 
         var index = Array2DPositionToIndex(position, Width);
 
@@ -135,5 +145,7 @@ internal class Bitmap {
         Data[index * 4 + 1] = Color.g;
         Data[index * 4 + 2] = Color.b;
         Data[index * 4 + 3] = Color.a;
+
+        return Some(Unit.Default);
     }
 }

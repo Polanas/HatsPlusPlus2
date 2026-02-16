@@ -1,5 +1,6 @@
 ﻿using Coroutines;
 using DuckGame;
+using ImGuiNET;
 using LanguageExt.UnsafeValueAccess;
 using Microsoft.Xna.Framework;
 using System.Collections;
@@ -86,6 +87,17 @@ internal static class TeamsSender {
         }
     }
 
+    internal static void DebugWindow() {
+        ImGui.Begin("TeamsSender debug");
+        ImGui.Text($"Active profiles amount: {lastActiveProfiles.Count}");
+        ImGui.Text($"Sending state: {sendingState}");
+        ImGui.Text("Send queue: ");
+        foreach (var item in sendQueue) {
+            ImGui.Text($"Handle: {{id: {item.handle.id}, gen: {item.handle.gen}}}, receiver: {item.receiver.Map((profile) => profile.name).ValueOr("everyone")}");
+        }
+        ImGui.End();
+    }
+
     internal static void Init() {
         coroutines = new CoroutineRunner();
         coroutines.Run(SendTeamsCoroutine());
@@ -134,6 +146,8 @@ internal static class TeamsSender {
                             data.loadedForProfiles.Add(ProfileId.New(profile.id), false);
                             sendingState = SendingState.Sending;
                             sendQueue.Add(TeamNetMessage.New(data.handle, profile));
+
+                            HatsOnLevel.ActivateAll();
                             break;
                         case ProfileChangeKind.Removed:
                             data.loadedForProfiles.Remove(ProfileId.New(profile.id));

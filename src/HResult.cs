@@ -48,6 +48,7 @@ internal struct HResult<T>
             value = value,
             error = null,
             state = ResultState.Ok,
+            context = [],
         };
     }
 
@@ -55,7 +56,8 @@ internal struct HResult<T>
         return new HResult<T> {
             error = error,
             value = default(T),
-            state = ResultState.Err
+            state = ResultState.Err,
+            context = [],
         };
     }
 
@@ -81,13 +83,21 @@ internal struct HResult<T>
         return this;
     }
 
-    internal R Match<R>(Func<T, R> Ok, Func<string, R> Err) {
+    internal R MatchRet<R>(Func<T, R> Ok, Func<string, R> Err) {
         return IsOk ? Ok(value!) : Err(error!);
+    }
+
+    internal void Match(Action<T> Ok, Action<string> Err) {
+        if (IsOk) {
+            Ok(value!);
+        } else {
+            Err(error!);
+        }
     }
 
     public override string ToString() {
         var self = this;
-        return Match(
+        return MatchRet(
             (value) => value!.ToString(),
             (error) => {
                 string context = "";
@@ -106,7 +116,7 @@ internal struct HResult<T>
 
     internal T Unwrap() {
         var self = this;
-        return Match(
+        return MatchRet(
             (value) => value,
             (err) => throw new Exception($"Called Unwrap on an Err value: {self.ToString()}")
         );
@@ -114,7 +124,7 @@ internal struct HResult<T>
 
     internal string UnwrapErr() {
         var self = this;
-        return Match(
+        return MatchRet(
             (value) => throw new Exception($"Called UnwrapErr on an Ok value"),
             (err) => err
         );
@@ -122,7 +132,7 @@ internal struct HResult<T>
 
     internal T UnwrapOr(T value) {
         var self = this;
-        return Match(
+        return MatchRet(
             (value) => value,
             (err) => value
         );
@@ -130,7 +140,7 @@ internal struct HResult<T>
 
     internal T UnwrapOrElse(Func<T> valueFn) {
         var self = this;
-        return Match(
+        return MatchRet(
             (value) => value,
             (err) => valueFn()
         );
@@ -138,7 +148,7 @@ internal struct HResult<T>
 
     internal T Expect(string message) {
         var self = this;
-        return Match(
+        return MatchRet(
             (value) => value,
             (err) => throw new Exception($"{message}\n {self.ToString()}")
         );
@@ -146,14 +156,22 @@ internal struct HResult<T>
 
     internal HResult<U> Map<U>(Func<T, U> map) {
         var self = this;
-        return Match(
+        return MatchRet(
             (value) => HResult<U>.OkUnsafe(map(value)),
             (err) => HResult<U>.ErrUnsafe(err)
         );
     }
 
+    internal HResult<U> AndThen<U>(Func<T, HResult<U>> op) {
+        var self = this;
+        return MatchRet(
+            (value) => op(value),
+            (err) => HResult<U>.ErrUnsafe(err)
+        );
+    }
+
     internal U MapOr<U>(U defaultValue, Func<T, U> map) {
-        return Match(
+        return MatchRet(
             (value) => map(value),
             (err) => defaultValue
         );
@@ -161,7 +179,7 @@ internal struct HResult<T>
 
     internal HResult<T> MapErr(Func<string, string> mapErr) {
         var self = this;
-        return Match(
+        return MatchRet(
             (value) => self,
             (err) => ErrUnsafe(mapErr(err))
         );
@@ -169,7 +187,7 @@ internal struct HResult<T>
 
     internal U MapOrElse<U>(Func<string, U> defaultFn, Func<T, U> map) {
         var self = this;
-        return Match(
+        return MatchRet(
             (value) => map(value),
             (err) => defaultFn(err)
         );

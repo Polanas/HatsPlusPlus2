@@ -49,29 +49,34 @@ internal record struct TeamRecord(TeamHandle Handle);
 
 internal class TeamSlots {
     Option<TeamRecord>[] Slots;
-    Queue<TeamHandle> recycledHandles;
-    uint length;
+    Stack<TeamHandle> recycledHandles;
+    internal uint Length { get; private set; }
 
     internal static TeamSlots New() {
         return new TeamSlots {
             Slots = new Option<TeamRecord>[1000],
-            recycledHandles = new Queue<TeamHandle>(),
+            recycledHandles = new Stack<TeamHandle>(),
         };
+    }
+
+    internal void Clear() {
+        recycledHandles.Clear();
+        Length = 0;
     }
 
     TeamHandle NewTeamHandle() {
         if (recycledHandles.Count > 0) {
-            var recycledHandle = recycledHandles.Dequeue();
+            var recycledHandle = recycledHandles.Pop();
             recycledHandle.gen = TeamGen.New(recycledHandle.gen.value + 1);
             return recycledHandle;
         }
 
-        length += 1;
-        return TeamHandle.New(TeamGen.New(0), TeamId.New(length - 1));
+        Length += 1;
+        return TeamHandle.New(TeamGen.New(0), TeamId.New(Length - 1));
     }
 
     internal Option<TeamHandle> AddTeam() {
-        if (length >= Slots.Length) {
+        if (Length >= Slots.Length) {
             return None;
         }
 
@@ -85,7 +90,7 @@ internal class TeamSlots {
             return;
         }
 
-        recycledHandles.Enqueue(handle);
+        recycledHandles.Push(handle);
         Slots[handle.id.value] = None;
     }
 

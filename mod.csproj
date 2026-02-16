@@ -151,11 +151,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FindFirstTeamSlot.cs" />
-    <Compile Include="HatsManager.cs" />
-    <Compile Include="HatSprite.cs" />
-    <Compile Include="LuaLogger.cs" />
-    <Compile Include="LuaUtils.cs" />
+    <Compile Include="src\BitmapUtils.cs" />
+    <Compile Include="src\DebugWindow.cs" />
+    <Compile Include="src\FindFirstTeamSlot.cs" />
+    <Compile Include="src\HatManager.cs" />
+    <Compile Include="src\HatsTemplates.cs" />
+    <Compile Include="src\LoadedHats.cs" />
+    <Compile Include="src\HatSprite.cs" />
+    <Compile Include="src\LuaLogger.cs" />
+    <Compile Include="src\LuaUtils.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
@@ -174,8 +178,10 @@
     <Compile Include="src\Ducks.cs" />
     <Compile Include="src\Extenstions.cs" />
     <Compile Include="src\GlobalUsings.cs" />
-    <Compile Include="src\Hats.cs" />
+    <Compile Include="src\HatsOnLevel.cs" />
     <Compile Include="src\HResult.cs" />
+    <Compile Include="src\Patches\HatSelector.cs" />
+    <Compile Include="src\Patches\SendMessagePatch.cs" />
     <Compile Include="src\RoomHatUtils.cs" />
     <Compile Include="src\ScriptExtensions.cs" />
     <Compile Include="src\Teams.cs" />
@@ -281,7 +287,8 @@
     <Compile Include="src\Patches\Imgui.cs" />
     <Compile Include="src\IVector2.cs" />
     <Compile Include="src\Updater.cs" />
-    <Compile Include="TeamsSender.cs" />
+    <Compile Include="src\TeamsSender.cs" />
+    <Compile Include="StateMachine.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".editorconfig" />

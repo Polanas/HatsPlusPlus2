@@ -70,7 +70,6 @@ internal static class LuaUtils {
         RegisterType<HatSprite>(script, dataType);
         RegisterType<AnimFrame>(script, dataType);
         RegisterType<Animation>(script, dataType);
-        RegisterType<AnimType>(script, dataType);
         RegisterType<HatId>(script, dataType);
 
         LoadVec2(script);
@@ -656,10 +655,10 @@ internal static class LuaUtils {
     internal static void LoadHatFunctions(Script script) {
         script.Globals["vanillaHat"] = (TeamsBitmap teamsBitmap) => {
             var hatTable = DynValue.NewTable(script);
-            var vanillaHat = (VanillaHat)Hats.Add(VanillaHat.New(teamsBitmap));
+            var vanillaHat = (VanillaHat)HatsOnLevel.Add(VanillaHat.New(teamsBitmap));
 
             hatTable.Table["sprite"] = vanillaHat.sprite;
-            hatTable.Table["id"] = vanillaHat.GetId();
+            hatTable.Table["id"] = vanillaHat.id;
             hatTable.Table["teamsBitmap"] = teamsBitmap;
 
             hatTable.Table["getPosition"] = () => {
@@ -697,13 +696,13 @@ internal static class LuaUtils {
                 return vanillaHat.IsAlive();
             };
             hatTable.Table["remove"] = () => {
-                Hats.Remove(vanillaHat.GetId());
+                HatsOnLevel.Remove(vanillaHat);
             };
             return hatTable;
         };
-        script.Globals["teamsBitmap"] = (string path, Vec2 frameSize) => {
-            var result = TeamsStorage.LoadTeamsBitmap(path, new IVector2((int)frameSize.x, (int)frameSize.y));
-            return result.Match(
+        script.Globals["loadTeams"] = (string path, Option<IVector2> frameSize, Option<IVector2> partSize) => {
+            var result = TeamsStorage.LoadTeams(path, frameSize, partSize);
+            return result.MatchRet(
                 (bitmap) => DynValue.FromObject(script, bitmap),
                 (error) => {
                     LuaLogger.Log($"Error while loading teamsBitmap with path {path}: {error}");
@@ -722,7 +721,7 @@ internal static class LuaUtils {
             static DynValue RemoveFn(ScriptExecutionContext ctx, CallbackArguments args) {
                 var hat = args.GetArray()[0];
                 var id = hat.Table.Get("id").ToObject<HatId>();
-                Hats.Remove(id);
+                HatsOnLevel.RemoveById(id);
                 return DynValue.Nil;
             }
             static DynValue IsAliveFn(ScriptExecutionContext ctx, CallbackArguments args) {
@@ -741,7 +740,7 @@ internal static class LuaUtils {
                 var script = ctx.GetScript();
                 var hatTable = args.GetArray()[0];
                 var id = hatTable.Table.Get("id").ToObject<HatId>();
-                if (Hats.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
+                if (HatsOnLevel.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
                     return DynValue.Nil;
                 }
 
@@ -760,7 +759,7 @@ internal static class LuaUtils {
 
                 return DynValue.Nil;
             }
-            var hat = Hats.Add(DepthHat.New(teamsBitmap, None));
+            var hat = HatsOnLevel.Add(DepthHat.New(teamsBitmap, None, true));
             var hatTable = DynValue.NewTable(script).Table;
 
             hatTable.Set("position", DynValue.FromObject(script, hat.position));
@@ -769,7 +768,7 @@ internal static class LuaUtils {
             hatTable.Set("flippedHorizontally", DynValue.NewBoolean(hat.flippedHorizontally));
             hatTable.Set("teamsBitmap", DynValue.FromObject(script, teamsBitmap));
             hatTable.Set("sprite", DynValue.FromObject(script, hat.sprite));
-            hatTable.Set("id", DynValue.FromObject(script, hat.GetId()));
+            hatTable.Set("id", DynValue.FromObject(script, hat.id));
 
             hatTable.Set("isAlive", DynValue.NewCallback(IsAliveFn));
             hatTable.Set("remove", DynValue.NewCallback(RemoveFn));
@@ -779,12 +778,12 @@ internal static class LuaUtils {
         };
 
         script.Globals["depthAnimHat"] = (TeamsBitmap bitmap) => {
-            var hat = Hats.Add(DepthAnimHat.New(bitmap, None));
+            var hat = HatsOnLevel.Add(DepthAnimHat.New(bitmap, None, true));
             var hatTable = DynValue.NewTable(script).Table;
             static DynValue RemoveFn(ScriptExecutionContext ctx, CallbackArguments args) {
                 var hat = args.GetArray()[0];
                 var id = hat.Table.Get("id").ToObject<HatId>();
-                Hats.Remove(id);
+                HatsOnLevel.RemoveById(id);
                 return DynValue.Nil;
             }
             static DynValue IsAliveFn(ScriptExecutionContext ctx, CallbackArguments args) {
@@ -796,7 +795,7 @@ internal static class LuaUtils {
                 var script = ctx.GetScript();
                 var hatTable = args.GetArray()[0];
                 var id = hatTable.Table.Get("id").ToObject<HatId>();
-                if (Hats.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
+                if (HatsOnLevel.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
                     return DynValue.Nil;
                 }
 
@@ -815,7 +814,7 @@ internal static class LuaUtils {
             hatTable.Set("flippedHorizontally", DynValue.NewBoolean(hat.flippedHorizontally));
             hatTable.Set("teamsBitmap", DynValue.FromObject(script, bitmap));
             hatTable.Set("sprite", DynValue.FromObject(script, hat.sprite));
-            hatTable.Set("id", DynValue.FromObject(script, hat.GetId()));
+            hatTable.Set("id", DynValue.FromObject(script, hat.id));
 
             hatTable.Set("isAlive", DynValue.NewCallback(IsAliveFn));
             hatTable.Set("remove", DynValue.NewCallback(RemoveFn));
@@ -873,7 +872,7 @@ internal static class LuaUtils {
         script.Globals["maths"] = mathsTable;
     }
 
-    internal static void Update(Script script) {
+    internal static void UpdateScriptData(Script script) {
         LuaUtils.UpdateDucks(script);
         LuaUtils.UpdateLevel(script);
         LuaUtils.UpdateMouse(script);

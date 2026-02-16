@@ -7,8 +7,8 @@ local fun = require("fun")
 function State.init()
     Coroutines = coroutineRunner()
     Blinking = false
-    MouthTeams = teamsBitmap("C:\\Users\\Polanas\\AppData\\Roaming\\DuckGame\\Mods\\HatsPlusPlus2\\content\\mouth.png", vec2(32))
-    EyeTeams = teamsBitmap("C:\\Users\\Polanas\\AppData\\Roaming\\DuckGame\\Mods\\HatsPlusPlus2\\content\\nikoEye.png", vec2(32))
+    MouthTeams = loadTeams("C:\\Users\\Polanas\\AppData\\Roaming\\DuckGame\\Mods\\HatsPlusPlus2\\content\\mouth.png", vec2(32))
+    EyeTeams = loadTeams("C:\\Users\\Polanas\\AppData\\Roaming\\DuckGame\\Mods\\HatsPlusPlus2\\content\\nikoEye.png", vec2(32))
     Coroutines:start(function ()
         while true do
             local waitTime = (math.random() + 2) * (5/2)

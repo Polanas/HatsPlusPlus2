@@ -58,17 +58,22 @@ public class HatsPlusPlus2 : DisabledMod {
         Environment.SetEnvironmentVariable("PATH", Environment.GetEnvironmentVariable("PATH") + ";" + Path.Combine(GetPathFixed("DLLs"), "Native"));
         base.OnPreInitialize();
     }
+
     protected override void OnPostInitialize() {
         var harmony = new HarmonyLib.Harmony("hats_plus_plus_2.0");
         harmony.PatchAll();
 
         TeamsStorage.Init();
         TeamsSender.Init();
-        Hats.Init();
+        HatsOnLevel.Init();
         RoomHatUtils.Init();
-        DGImGui.Initialize();
+        DGImGui.Init();
+        HppDebugWindow.Init();
+        HatManager.Init();
         var updater = Updater.New();
         DGImGui.updater = updater;
+
+        HatManager.ScanHats();
 
         (typeof(Game).GetField("updateableComponents", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic).GetValue(MonoMain.instance) as List<IUpdateable>).Add(new ModUpdate() { updater = updater });
         (typeof(Game).GetField("drawableComponents", BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic).GetValue(MonoMain.instance) as List<IDrawable>).Add(new ModDraw());
@@ -78,7 +83,10 @@ public class HatsPlusPlus2 : DisabledMod {
             AppDomain.CurrentDomain.Load(assembly.GetName());
         }
 
-        //make sure libs is loaded early to prevent lag spikes
+        PreloadLibs();
+    }
+
+    internal void PreloadLibs() {
         {
             var sprite = HatSprite.New();
             sprite.addAnim(Animation.New("normal", 1f, true, []));
@@ -91,7 +99,7 @@ public class HatsPlusPlus2 : DisabledMod {
                 frames = [],
                 frameSize = new IVector2(20,20),
                 isBig = false
-            }, new ScoreRock(20, 20, null));
+            }, new ScoreRock(20, 20, null), false);
         }
 
         var asyncAssembly = Assembly.LoadFile(Mod.GetPath<HatsPlusPlus2>("DLLs\\Microsoft.Bcl.AsyncInterfaces.dll"));
@@ -111,7 +119,8 @@ internal class ModUpdate : IUpdateable {
 
     public int UpdateOrder {
         get {
-            return 1;
+            //NOTE: was one before
+            return 100;
         }
     }
 

@@ -12,6 +12,18 @@ internal static class LuaLogger {
     static List<string> logs = new();
     const int MAX_LOGS_AMOUNT = 1000;
 
+    internal static void Warn(string message) {
+        Log($"[WARN] {message}");
+    }
+
+    internal static void Info(string message) {
+        Log($"[INFO] {message}");
+    }
+
+    internal static void Error(string message) {
+        Log($"[ERROR] {message}");
+    }
+
     internal static void Log(string message) {
         logs.Add(message);
 

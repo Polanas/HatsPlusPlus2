@@ -31,7 +31,7 @@ internal class BufferingTest {
     ScoreRock rock;
 
     internal void Init() {
-        var my_bitmap = Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>("image.png"));
+        var my_bitmap = Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>("image.png")).Unwrap();
         var bitmap = new System.Drawing.Bitmap(my_bitmap.Width, my_bitmap.Height);
         for (int x = 0; x < bitmap.Width; x++) {
             for (int y = 0; y < bitmap.Height; y++) {

@@ -19,18 +19,11 @@ using AsepriteDotNet.Aseprite.Types;
 
 namespace HatsPlusPlus;
 
-internal class DrawThingTemp : Thing {
-    public static Vec2 current;
-    public static Vec2 first;
-    public static int counter;
-    public override void Draw() {
-        base.Draw();
-        Graphics.DrawCircle(new Vec2(0, 0), 50, DuckGame.Color.Red, 0, new Depth(2));
-    }
-
-    public DrawThingTemp(): base(0,-1000) {
-        this.layer = Layer.Blocks;
-    }
+internal enum HatSelectorState {
+    OnOpen,
+    Opened,
+    OnClose,
+    Closed,
 }
 
 internal class Updater {
@@ -44,50 +37,97 @@ internal class Updater {
     Option<WearableHat> wearableHat;
     TeamsBitmap teamsBitmap;
     HatSprite hatSpriteTest;
+    StateMachine<HatSelectorState> hatSelectorMachine;
 
     internal static Updater New() {
         var updater = new Updater();
         updater.coroutines = new CoroutineRunner();
+        updater.hatSelectorMachine = new StateMachine<HatSelectorState>();
+        updater.hatSelectorMachine.SetCallBacks(HatSelectorState.OnOpen, updater.OnOpen);
+        updater.hatSelectorMachine.SetCallBacks(HatSelectorState.OnClose, updater.OnClose);
+        updater.hatSelectorMachine.SetCallBacks(HatSelectorState.Opened, updater.Opened);
+        updater.hatSelectorMachine.SetCallBacks(HatSelectorState.Closed, updater.Closed);
 
         return updater;
     }
 
+    internal HatSelectorState OnOpen() {
+        return HatSelectorState.Opened;
+    }
+
+    internal HatSelectorState Opened() {
+        if (Level.current is TeamSelect2 teamSelect) {
+            var hatSelector = teamSelect._profiles.Get(DuckNetwork.localDuckIndex).AndThen((p) => p._hatSelector != null ? Some(p._hatSelector) : None); 
+            if (hatSelector.Map((s) => !s.open).ValueOr(false)) {
+                return HatSelectorState.OnClose;
+            }
+        }
+        return HatSelectorState.Opened;
+    }
+
+    internal HatSelectorState OnClose() {
+        HatManager.OnHatSelectorClose();
+        return HatSelectorState.Closed;
+    }
+
+    internal HatSelectorState Closed() {
+        if (Level.current is TeamSelect2 teamSelect) {
+            var hatSelector = teamSelect._profiles.Get(DuckNetwork.localDuckIndex).AndThen((p) => p._hatSelector != null ? Some(p._hatSelector) : None); 
+            if (hatSelector.Map((s) => s.open).ValueOr(false)) {
+                return HatSelectorState.OnOpen;
+            }
+        }
+        return HatSelectorState.Closed;
+    }
+
     internal void OnEnteringOnline() {
-        //TeamsStorage.RemoveAll();
-        DevConsole.Log(DCSection.Connection, "Entering online!");
+        TeamsStorage.UnloadAll();
     }
 
     internal void OnLobbyEnter() {
+        HatManager.OnLobbyEnter();
+    }
 
+    //A level where hats can be spawned
+    internal void OnGameLevelEnter() {
+        HatManager.OnGameLevelEnter();
     }
 
     internal void OnLevelEnter() {
-        Hats.OnLevelStart();
+        HatsOnLevel.OnLevelStart();
 
         if (Level.current is TeamSelect2) {
             OnLobbyEnter();
-        }
-        if (DuckNetwork.status == DuckNetStatus.Connected) {
-            OnEnteringOnline();
+        } else {
+            hatSelectorMachine.ForceState(HatSelectorState.Closed);
+
+            //TODO: account for scoreboard level
+            OnGameLevelEnter();
         }
     }
-    ScoreRock rock;
     internal void Update(GameTime gameTime) {
-        if (Keyboard.Pressed(Keys.O)) {
-            Level.Add(new DrawThingTemp());
+        foreach (var duck in Level.current.things[typeof(Duck)]) {
+            var d = (Duck)duck;
+
+            if (d.profile == DuckNetwork.localProfile) {
+                Ducks.mainDuck = d;
+                break;
+            }
         }
+        if (Ducks.mainDuck == null) {
+            return;
+        }
+        HatManager.Update(gameTime);
+        hatSelectorMachine.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
         if (script is not null) {
             LuaUtils.UpdateMouse(script);
             LuaUtils.UpdateDucks(script);
             LuaUtils.UpdateLevel(script);
             script.Globals["positionScreen"] = Mouse.positionScreen;
         }
-
-        var duck = DuckNetwork.localProfile?.duck ?? Profiles.DefaultPlayer1.duck;
-        if (duck != null) {
-            hat.IfSome((hat) => { hat.position = duck.position + new Vec2(-1,-8f); });
+        if (scriptableHat.IsSome && scriptableHat.ValueUnsafe() is var hat) {
+            hat.Update(gameTime);
         }
-        Hats.Update(gameTime);
 
         if (lastLevel != Level.current) {
             OnLevelEnter();
@@ -96,117 +136,42 @@ internal class Updater {
             OnEnteringOnline();
         }
 
+        HatsOnLevel.Update(gameTime);
         TeamsSender.Update(gameTime);
-        coroutines.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
+
+        //coroutines.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
 
         lastLevel = Level.current;
         wasNetworkActive = Network.isActive;
     }
 
-    internal void Draw(GameTime gameTime) {
-        LuaLogger.Show();
-        Hats.Draw(gameTime);
-        ImGui.Begin("test");
-
-        ImGui.Text($"current: {DrawThingTemp.current.x}");
-        ImGui.Text($"first: {DrawThingTemp.first.x}");
-        ImGui.Text($"difference: {Math.Abs(DrawThingTemp.first.x - DrawThingTemp.current.x)}");
-        ImGui.Text($"counter: {DrawThingTemp.counter}");
-
-        if (ImGui.Button("remove all")) {
-            Hats.RemoveAll();
-            script = null;
-        }
-        if (ImGui.Button("reload script")) {
-            var state = script.DoString(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("LuaScripts\\skebob.lua")), null, "wearable.lua");
-            //state.Table.Get("load").Function.Call();
-            this.wearableHat.IfSome((hat) => {
-                hat.luaState = state;
-            });
-        }
-        if (ImGui.Button("clear teams")) {
-            TeamsStorage.UnloadAll();
-        }
-        if (ImGui.Button("load scriptable hat")) {
-            var hat = ScriptableHat.New();
-            script = new Script(MoonSharp.Interpreter.CoreModules.Preset_Complete);
-            LuaUtils.LoadApi(script);
-            var state = script.DoString(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("LuaScripts\\skebob.lua")), null, "wearable.lua");
-            Hats.Add(hat, state);
-            try {
-                state.Table.Get("init").Function.Call();
-                state.Table.Get("load").Function.Call();
-            } catch (ScriptRuntimeException e) {
-                LuaLogger.Log($"Error: {e.DecoratedMessage ?? e.Message}");
+    internal void TeamSlotsDebugWindow() {
+        ImGui.Begin("Team slots");
+        ImGui.Text($"Slots used total: {TeamsStorage.slots.Length}");
+        ImGui.Text($"Teams loaded: {TeamsStorage.loadedTeams.Count}");
+        ImGui.Text("Team slots: ");
+        ImGui.Text("Red = inactive, Green = active");
+        for (int i = 0; i < TeamsStorage.slots.Length; i++) {
+            var handle = TeamsStorage.handlesByIds.Get(TeamId.New((uint)i)).Flatten();
+            if (i % 20 != 0) {
+                ImGui.SameLine(0, 5);
             }
-            this.scriptableHat = hat;
-        }
-        if (ImGui.Button("load teams")) {
-            teamsBitmap = TeamsStorage.LoadTeamsBitmap(HatsPlusPlus2.GetPathFixed("niko.png"), new IVector2(32)).Unwrap();
-        }
-        if (ImGui.Button("load room")) {
-            var hatData = JsonConvert.DeserializeObject<HatData>(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("RoomHatTest\\data.json")));
-            var roomData = hatData.elements[0].room;
-            var bitmap = Bitmap.FromPath(HatsPlusPlus2.GetPathFixed("RoomHatTest\\images\\room.png"));
-            var roomHat = RoomHat.New(roomData, None, bitmap);
-            Hats.Add(roomHat);
-        }
-        if (ImGui.Button("load wearable")) {
-            //AsepriteFile file = AsepriteFileLoader.FromFile(HatsPlusPlus2.GetPathFixed("niko.aseprite"));
-            //Rgba32[] framePixels = file.Frames[0].FlattenFrame(onlyVisibleLayers: true, includeBackgroundLayer: false, includeTilemapCels: false);
-
-            //var teamsBitmap = TeamsStorage.LoadTeamsBitmap(HatsPlusPlus2.GetPathFixed("niko.png"), new IVector2(32)).Unwrap();
-            var hatData = JsonConvert.DeserializeObject<HatData>(File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("data.json")));
-            var script = new Script(MoonSharp.Interpreter.CoreModules.Preset_Complete);
-            LuaUtils.LoadApi(script);
-            var wearableHat = WearableHat.New(script, teamsBitmap, hatData.elements[0].wearable);
-            var text = File.ReadAllText(Mod.GetPath<HatsPlusPlus2>("LuaScripts\\skebob.lua"));
-            var state = script.DoString(text, null, "wearable");
-            Hats.Add(wearableHat, state);
-            LuaUtils.UpdateDucks(script);
-            LuaUtils.UpdateLevel(script);
-            LuaUtils.UpdateMouse(script);
-            try {
-                state.Table.Get("init").Function.Call();
-            } catch (ScriptRuntimeException e) {
-                LuaLogger.Log($"Error: {e.DecoratedMessage ?? e.Message}");
+            if (handle.IsSome) {
+                ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(39/255f, 111/255f, 36/255f, 1)); 
+            } else {
+                ImGui.PushStyleColor(ImGuiCol.Button, new System.Numerics.Vector4(111/255f, 36/255f, 40/255f, 1)); 
             }
-            this.wearableHat = wearableHat;
-            this.script = script;
-        }
-        if (ImGui.Button("rock n roll bitch")) {
-            var bitmap = Bitmap.FromPath(Mod.GetPath<HatsPlusPlus2>("rock.png"));
-            //var team = TeamsStorage.BitmapToTeam(bitmap, "team").UnwrapOk();
-            var profile = Ducks.MainDuck.profile;
-            profile.team.hat.texture = Teams.all.Find(x => x.hat.texture.textureName == "hats/noHat").hat.texture; 
-            var rock = new ScoreRock(20, 20, profile);
-            Level.Add(rock);
-        }
-        if (this.hat.ValueUnsafe() is var _hat && this.hat.IsSome) {
-            ImGui.Text(_hat.sprite.timeAccumulator.ToString());
-        }
-        if (ImGui.Button("set anim 1") || Keyboard.Pressed(Keys.E)) {
-            if (this.hat.ValueUnsafe() is var hat && this.hat.IsSome) {
-                var oldFrameId = hat.sprite.currentFrameId;
-                hat.sprite.setAnim("normal", ClearState.Yes);
-                hat.sprite.currentFrameId = 7 - oldFrameId;
-                var duck = DuckNetwork.localProfile?.duck ?? Profiles.DefaultPlayer1.duck;
-                if (duck is not null) {
-                    hat.depth = duck.depth.value + 0.1f;
-                }
-            }
-        }
-        if (ImGui.Button("set anim 2") || Keyboard.Released(Keys.E)) {
-            if (this.hat.ValueUnsafe() is var hat && this.hat.IsSome) {
-                var oldFrameId = hat.sprite.currentFrameId;
-                hat.sprite.setAnim("rev", ClearState.No);
-                hat.sprite.currentFrameId = 7 - oldFrameId;
-            }
-        }
-        ImGui.Text("Profiles");
-        foreach (var profile in Profiles.active) {
-            ImGui.Text(profile.name.ToString());
+            ImGui.Button(" ", new System.Numerics.Vector2(20,20));
+            ImGui.PopStyleColor();
         }
         ImGui.End();
     }
+
+    internal void Draw(GameTime gameTime) {
+        HppDebugWindow.Draw();
+        LuaLogger.Show();
+        TeamsSender.DebugWindow();
+        HatsOnLevel.Draw(gameTime);
+        TeamSlotsDebugWindow();
+
 }

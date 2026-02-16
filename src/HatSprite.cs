@@ -44,9 +44,9 @@ internal class HatSprite
     Option<int> lastForceCurrentFrame;
 
     [MoonSharpVisible(false)]
-    public static HatSprite New() {
+    public static HatSprite New(List<Animation> anims = null) {
         return new HatSprite {
-            anims = new(),
+            anims = anims == null ? [] : anims.ToDictionary((a => a.name)),
             lastForceCurrentFrame = Some(-1),
             PreviousFrameId = -1,
         };
@@ -69,11 +69,11 @@ internal class HatSprite
         return anims.Values.Any((anim) => anim.name == animName);
     }
 
-    public void setAnim(string name, ClearState clearState = ClearState.Yes) {
+    public void setAnim(string name, ClearState clearState = ClearState.Yes, bool reset = true) {
         foreach (var pair in anims) {
             (var _, var animName) = (pair.Value, pair.Key);
             if (animName == name) {
-                if (currentAnimName.Map((name) => name != animName).ValueOr(true)) {
+                if (currentAnimName.Map((name) => (name != animName) || reset).ValueOr(true)) {
                     finished = false;
                     if (clearState == ClearState.Yes) {
                         clearFrameState();
@@ -113,7 +113,7 @@ internal class HatSprite
 
         AnimFrame currentFrame;
         lastForceCurrentFrame = forceCurrentFrame;
-        if (this.currentAnimName.ValueUnsafe() is var  currentAnimName && this.currentAnimName.IsSome) {
+        if (this.currentAnimName.ValueUnsafe() is var currentAnimName && this.currentAnimName.IsSome) {
             var currentAnim = anims[currentAnimName];
             currentFrame = currentAnim.frames[currentFrameId];
             var delay = currentFrame.delay.IfNone(() => currentAnim.delay);
@@ -125,6 +125,7 @@ internal class HatSprite
                 if (currentFrameId == currentAnim.frames.Count) {
                     if (currentAnim.looping) {
                         currentFrameId = 0;
+                    FrameChanged = true;
                     } else {
                         finished = true;
                         currentFrameId -= 1;

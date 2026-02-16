@@ -1,4 +1,5 @@
-﻿using LanguageExt.ClassInstances;
+﻿using DuckGame;
+using LanguageExt.ClassInstances;
 using Microsoft.Xna.Framework.Graphics;
 using Newtonsoft.Json;
 using OneOf;
@@ -32,6 +33,10 @@ internal struct WearableHatData {
     [JsonProperty(PropertyName = "strapped_on")]
     public bool strappedOn;
     public List<Animation> animations;
+    [JsonProperty(PropertyName = "custom_depth")]
+    public float? customDepth;
+    [JsonProperty(PropertyName = "extra_hat")]
+    public ExtraHat? extraHat;
 }
 
 internal struct HatBaseData {
@@ -50,17 +55,28 @@ internal struct RoomHatData {
     public HatBaseData baseData;
 }
 
+internal struct ExtraHat {
+    [JsonProperty(PropertyName = "base")]
+    public HatBaseData baseData;
+}
+
 internal struct PetBaseData {
     public int distance;
     public bool flipped;
 }
 
+internal struct PreviewHatData {
+    [JsonProperty(PropertyName = "base")]
+    public HatBaseData baseData;
+}
+
 internal struct HatElementData {
     [JsonProperty(PropertyName = "Wearable")]
-    public WearableHatData wearable;
-    //TODO: sync property names with the editor
+    public WearableHatData? wearable;
     [JsonProperty(PropertyName = "Room")]
-    public RoomHatData room;
+    public RoomHatData? room;
+    [JsonProperty(PropertyName = "Preview")]
+    public PreviewHatData? preview;
 }
 
 internal struct HatData {
