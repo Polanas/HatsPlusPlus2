@@ -29,19 +29,18 @@ internal enum HatSelectorState {
 internal class Updater {
     Level lastLevel;
     bool wasNetworkActive;
-    Script script;
 
-    Option<DepthAnimHat> hat;
-    Option<ScriptableHat> scriptableHat;
-    CoroutineRunner coroutines;
-    Option<WearableHat> wearableHat;
-    TeamsBitmap teamsBitmap;
-    HatSprite hatSpriteTest;
     StateMachine<HatSelectorState> hatSelectorMachine;
+    DepthHat depthHat;
+
+    static GameTime gameTime;
+
+    internal static GameTime GameTime() {
+        return gameTime;
+    }
 
     internal static Updater New() {
         var updater = new Updater();
-        updater.coroutines = new CoroutineRunner();
         updater.hatSelectorMachine = new StateMachine<HatSelectorState>();
         updater.hatSelectorMachine.SetCallBacks(HatSelectorState.OnOpen, updater.OnOpen);
         updater.hatSelectorMachine.SetCallBacks(HatSelectorState.OnClose, updater.OnClose);
@@ -106,6 +105,7 @@ internal class Updater {
         }
     }
     internal void Update(GameTime gameTime) {
+        Updater.gameTime = gameTime;
         foreach (var duck in Level.current.things[typeof(Duck)]) {
             var d = (Duck)duck;
 
@@ -119,15 +119,6 @@ internal class Updater {
         }
         HatManager.Update(gameTime);
         hatSelectorMachine.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
-        if (script is not null) {
-            LuaUtils.UpdateMouse(script);
-            LuaUtils.UpdateDucks(script);
-            LuaUtils.UpdateLevel(script);
-            script.Globals["positionScreen"] = Mouse.positionScreen;
-        }
-        if (scriptableHat.IsSome && scriptableHat.ValueUnsafe() is var hat) {
-            hat.Update(gameTime);
-        }
 
         if (lastLevel != Level.current) {
             OnLevelEnter();
@@ -136,10 +127,12 @@ internal class Updater {
             OnEnteringOnline();
         }
 
+        if (this.depthHat != null) {
+            this.depthHat.position = Ducks.mainDuck.position;
+        }
+
         HatsOnLevel.Update(gameTime);
         TeamsSender.Update(gameTime);
-
-        //coroutines.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
 
         lastLevel = Level.current;
         wasNetworkActive = Network.isActive;
@@ -174,4 +167,14 @@ internal class Updater {
         HatsOnLevel.Draw(gameTime);
         TeamSlotsDebugWindow();
 
+        ImGui.Begin("test");
+        if (ImGui.Button("spawn depth hat")) {
+            var teams = TeamsStorage.LoadTeams(HatsPlusPlus2.GetPathFixed("nikoEye.png"), None, None).Unwrap();
+            this.depthHat = DepthHat.New(teams, None, true);
+            this.depthHat.depth = 1;
+            this.depthHat.SetState(DepthHatState.DepthInactive);
+            HatsOnLevel.Add(this.depthHat);
+        }
+        ImGui.End();
+    }
 }

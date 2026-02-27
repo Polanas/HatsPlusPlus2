@@ -14,6 +14,9 @@ using Script = MoonSharp.Interpreter.Script;
 using Coroutines;
 using Microsoft.Xna.Framework;
 using System.Collections;
+using LanguageExt.ClassInstances;
+using System.Security.Cryptography;
+using System.Diagnostics.Eventing.Reader;
 
 namespace HatsPlusPlus;
 
@@ -31,38 +34,49 @@ internal struct WearableHatTemplate {
     }
 }
 
+internal struct ScriptHatTemplate {
+    internal ScriptHatData data;
+}
+
 internal struct WalkingPetTemplate {
     internal TeamsBitmap teams;
 }
 
 internal struct HatTemplate {
     internal WearableHatTemplate? wearable;
-    internal string hatHame;
+    internal List<ScriptHatTemplate> scriptHats = new();
+    internal string hatName;
+    internal string hatPath;
 
     public HatTemplate() {
 
     }
 
     internal void Instantiate() {
-        LuaLogger.Info($"Instantiating hat {hatHame}");
+        LuaLogger.Info($"Instantiating hat {hatName}");
 
         if (wearable.Value is var wearableTemplate) {
-            Option<(Script, DynValue)> scriptData = None;
-            if (wearableTemplate.data.baseData.localScriptPath is var scriptPath && scriptPath != null) {
-                var script = new Script(CoreModules.Preset_HardSandbox);
-                LuaUtils.LoadApi(script);
-                var output = script.DoString(scriptPath);
-                scriptData = (script, output);
+            Option<LuaScript> scriptOpt = None;
+            if (wearableTemplate.data.baseData.localScriptPath is var localPath && localPath != null) {
+                var script = LuaScript.New(Path.Combine(hatPath, Constants.SCRIPT_DIR, localPath));
+                var images_path = Path.Combine(hatPath, Constants.IMAGES_DIR);
+                script.SetImagesPath(images_path);
+                script.Select();
+                scriptOpt = script;
             }
-            var wearable = WearableHat.New(wearableTemplate.teams, wearableTemplate.data, wearableTemplate.animations, scriptData);
+            var wearable = WearableHat.New(wearableTemplate.teams, wearableTemplate.data, wearableTemplate.animations, scriptOpt);
             HatsOnLevel.Add(wearable);
+        }
+        foreach (var scriptHatTemplate in scriptHats) {
+            //TODO: init script hat properly
+            var scriptHat = ScriptHat.New(scriptHatTemplate.data, None);
+            HatsOnLevel.Add(scriptHat);
         }
     }
 }
 
 internal static class HatManager {
     internal static Dictionary<string, string> pathsByNames = [];
-    internal static Dictionary<string, HatData> hatsDataByPaths = [];
     internal static Option<HatTemplate> selectedHatTemplate;
     internal static CoroutineRunner runner;
 
@@ -141,6 +155,7 @@ internal static class HatManager {
 
     internal static HResult<HatTemplate> LoadHatTemplate(string hatPath) {
         HatTemplate template = new();
+        template.hatPath = hatPath;
 
         var imagesPath = Path.Combine(hatPath, "images");
         if (!Directory.Exists(imagesPath)) {
@@ -167,8 +182,11 @@ internal static class HatManager {
             return (teamsBitmap, asepriteDataOpt);
         }
 
-        var hatData = hatsDataByPaths[hatPath];
-        template.hatHame = hatData.name;
+        var hatDataOpt = LoadHatData(Path.Combine(hatPath, Constants.DATA_FILE));
+        if (hatDataOpt.IsSome && hatDataOpt.ValueUnsafe() is var hatData) { } else {
+            return Err<HatTemplate>("could not load hat data");
+        }
+        template.hatName = hatData.name;
         foreach (var element in hatData.elements) {
             if (element.wearable != null && element.wearable.Value is var wearable) {
                 var imagePath = Path.Combine(imagesPath, wearable.baseData.localImagePath);
@@ -191,7 +209,9 @@ internal static class HatManager {
     }
 
     internal static void ScanHats() {
-        foreach (var hatsDir in Team.hatSearchPaths.Filter((dir) => Directory.Exists(dir))) {
+        var hatPaths = new List<string>(Team.hatSearchPaths.Filter((dir) => Directory.Exists(dir)));
+        hatPaths.Add(HatsPlusPlus2.GetPathFixed("Hats"));
+        foreach (var hatsDir in hatPaths) {
             var dirInfo = new DirectoryInfo(hatsDir);
 
             foreach (var hatDir in dirInfo.GetDirectories()) {
@@ -205,51 +225,60 @@ internal static class HatManager {
                     LuaLogger.Warn($"While loading a hat at {hatDir}: scripts directory not found");
                     continue;
                 }
-                var dataPath = Path.Combine(hatDir.FullName, "data.json");
-                if (!File.Exists(dataPath)) {
-                    LuaLogger.Warn($"While loading a hat at {hatDir}: data.json file not found");
-                    continue;
-                }
-                string dataJsonText;
-                try {
-                    dataJsonText = File.ReadAllText(dataPath);
-                } catch (Exception e) {
-                    LuaLogger.Warn($"While loading a hat at {hatDir}: could not read from {dataPath}: {e.ToString()}");
+
+                var dataOpt = LoadHatData(Path.Combine(hatDir.FullName,Constants.DATA_FILE));
+                if (dataOpt.IsSome && dataOpt.ValueUnsafe() is var data)  {
+                } else {
                     continue;
                 }
 
-                var hatData = JsonConvert.DeserializeObject<HatData>(dataJsonText);
-                var previewData = hatData.elements.Find((e) => e.preview != null);
-                if (previewData.preview == null) {
-                    LuaLogger.Warn($"While loading a hat at {hatDir}: preview element not found");
+
+                var previewOpt = data.Preview();
+                if (previewOpt.IsSome && previewOpt.ValueUnsafe() is var preview) {
+                } else {
+                    LuaLogger.Warn($"preview element not found");
                     continue;
                 }
 
-                var previewImagePath = previewData.preview.Value.baseData.localImagePath;
-                if (previewImagePath == null) {
-                    LuaLogger.Warn($"While loading a hat at {hatDir}: preview.localImagePath not found");
+                if (preview.baseData.localImagePath is var previewImagePath && previewImagePath != null) { } else {
+                    LuaLogger.Warn($"preview.local_image_path not found");
                     continue;
                 }
 
                 var fullPreviewPath = Path.Combine(imagesDir, previewImagePath);
-                var previewTeamBitmapResult = BitmapUtils.Load(fullPreviewPath);
-                if (previewTeamBitmapResult.OkErrUnsafe() is ((var previewTeamBitmap, var _), var bitmapErr) && previewTeamBitmapResult.IsOk) { } else {
-                    LuaLogger.Warn($"While loading a hat at {hatDir}: could not load preview bitmap: {bitmapErr}");
+                var previewTeamBitmapR = BitmapUtils.Load(fullPreviewPath);
+                if (previewTeamBitmapR.OkErrUnsafe() is ((var previewTeamBitmap, var _), var bitmapErr) && previewTeamBitmapR.IsOk) { } else {
+                    LuaLogger.Warn($"could not load preview bitmap: {bitmapErr}");
                     continue;
                 }
-                var previewTeamName = $"[HATS++] {hatData.name}";
-                var previewTeamResult = TeamsStorage.BitmapToTeam(previewTeamBitmap, previewTeamName);
-                if (previewTeamResult.OkErrUnsafe() is (var previewTeam, var teamErr) && previewTeamResult.IsOk) { } else {
-                    LuaLogger.Warn($"While loading a hat at {hatDir}: could not load preview team: {teamErr}");
+                var previewTeamName = $"[HATS++] {data.name}";
+                var previewTeamR = TeamsStorage.BitmapToTeam(previewTeamBitmap, previewTeamName);
+                if (previewTeamR.OkErrUnsafe() is (var previewTeam, var teamErr) && previewTeamR.IsOk) { } else {
+                    LuaLogger.Warn($"could not load preview team: {teamErr}");
                     continue;
                 }
 
                 Teams.AddExtraTeam(previewTeam);
                 pathsByNames.Add(previewTeamName, hatDir.FullName);
-                hatsDataByPaths.Add(hatDir.FullName, hatData);
             }
         }
     } 
+
+    internal static Option<HatData> LoadHatData(string path) {
+            if (!File.Exists(path)) {
+                LuaLogger.Warn($"data.json file not found");
+                return None;
+            }
+            string dataJsonText;
+            try {
+                dataJsonText = File.ReadAllText(path);
+            } catch (Exception e) {
+                LuaLogger.Warn($"Could not read from {path}: {e.ToString()}");
+                return None;
+            }
+            return JsonConvert.DeserializeObject<HatData>(dataJsonText);
+
+    }
 
     internal static void OnHatSelectorClose() {
         runner.Run(OnHatSelectorCloseCoroutine());

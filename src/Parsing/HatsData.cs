@@ -27,6 +27,11 @@ internal enum LinkFrameState {
     Inverted,
 }
 
+internal struct ScriptHatData {
+    [JsonProperty(PropertyName = "base")]
+    public HatBaseData baseData;
+}
+
 internal struct WearableHatData {
     [JsonProperty(PropertyName = "base")]
     public HatBaseData baseData;
@@ -77,9 +82,47 @@ internal struct HatElementData {
     public RoomHatData? room;
     [JsonProperty(PropertyName = "Preview")]
     public PreviewHatData? preview;
+    [JsonProperty(PropertyName = "Script")]
+    public ScriptHatData? script;
 }
 
 internal struct HatData {
     public List<HatElementData> elements;
     public string name;
+
+    internal Option<PreviewHatData> Preview() {
+        foreach (var elem in elements) {
+            if (elem.preview != null) {
+                return elem.preview.Value;
+            }
+        }
+        return None;
+    }
+
+    internal Option<WearableHatData> Wearable() {
+        foreach (var elem in elements) {
+            if (elem.wearable != null) {
+                return elem.wearable.Value;
+            }
+        }
+        return None;
+    }
+
+    //internal Option<WearableHatData> Wings() {
+    //    foreach (var elem in elements) {
+    //        if (elem.wearable != null) {
+    //            return elem.wearable.Value;
+    //        }
+    //    }
+    //    return None;
+    //}
+
+    internal Option<RoomHatData> Room() {
+        foreach (var elem in elements) {
+            if (elem.room != null) {
+                return elem.room.Value;
+            }
+        }
+        return None;
+    }
 }

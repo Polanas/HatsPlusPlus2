@@ -151,6 +151,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="LuaScript.cs" />
     <Compile Include="src\BitmapUtils.cs" />
     <Compile Include="src\DebugWindow.cs" />
     <Compile Include="src\FindFirstTeamSlot.cs" />

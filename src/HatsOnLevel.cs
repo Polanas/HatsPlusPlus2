@@ -106,11 +106,24 @@ internal abstract class AbstractHat {
     internal TeamsBitmap teamsBitmap;
     internal HatSprite sprite;
     internal HatId id;
-    internal bool update = true;
+    internal bool should_update = true;
+    internal Option<LuaScript> scriptData;
 
-    internal abstract void OnRemove();
     internal abstract void Update(GameTime gameTime);
-    internal abstract void Draw(GameTime gameTime);
+    internal virtual void OnRemove() { }
+    internal virtual void Draw(GameTime gameTime) { }
+
+    internal virtual void OnPressQuack() { }
+    internal virtual void OnReleaseQuack() { }
+
+    internal virtual void FillFromLua(Table table) {
+        position = table.Get(nameof(AbstractHat.position)).ToObject<Vec2>();
+        depth = table.Get(nameof(AbstractHat.depth)).ToObject<float>();
+        angle = (float)table.Get(nameof(AbstractHat.angle)).ToObject<float>();
+        flippedHorizontally = table.Get(nameof(AbstractHat.flippedHorizontally)).ToObject<bool>();
+        teamsBitmap = table.Get(nameof(AbstractHat.teamsBitmap)).ToObject<TeamsBitmap>();
+        sprite = table.Get(nameof(AbstractHat.sprite)).ToObject<HatSprite>();
+    }
 
     internal bool IsAlive() {
         return HatsOnLevel.IsAlive(id);
@@ -233,45 +246,26 @@ internal enum NewAnim {
     No
 }
 
-internal class ScriptableHat : AbstractHat {
-    internal Option<DynValue> luaState;
+internal class ScriptHat : AbstractHat {
+    internal ScriptHatData hatData;
 
-    internal static ScriptableHat New() {
-        return new ScriptableHat {
+    internal static ScriptHat New(ScriptHatData hatData, Option<LuaScript> script) {
+        return new ScriptHat {
+            hatData = hatData,
+            scriptData = script,
         };
     }
 
-    //internal override void Add(Option<DynValue> luaState) {
-    //    this.luaState = luaState;
-    //    var value = luaState.Unwrap();
-    //    //TryCall("init");
-    //}
-
     internal override void OnRemove() {
-        TryCall("remove");
-    }
-
-    void TryCall(string functionName, params object[] args) {
-        try {
-
-            if (luaState.ValueUnsafe() is var state && luaState.IsSome) {
-                var functionTable = state.Table.Get(functionName);
-                if (functionTable.Function is var fn && fn is not null) {
-                    fn.Call(args);
-                }
-            }
-        }
-        catch (ScriptRuntimeException e) {
-            LuaLogger.Log($"Error: {e.DecoratedMessage ?? e.Message}");
-        }
+        //TryCall("remove");
     }
 
     internal override void Update(GameTime gameTime) {
-        TryCall("update", gameTime);
+        //TryCall("update", gameTime);
     }
 
     internal override void Draw(GameTime gameTime) {
-        TryCall("draw", gameTime);
+        //TryCall("draw", gameTime);
     }
 }
 
@@ -318,7 +312,7 @@ internal class DepthAnimHat: AbstractHat {
                 HatsOnLevel.Add(DepthHat.New(teamsBitmap, rockOption, false)) as DepthHat,
                 HatsOnLevel.Add(DepthHat.New(teamsBitmap, rockOption, false)) as DepthHat,
             },
-            update = update,
+            should_update = update,
         };
 
         foreach (var h in hat.hats) {
@@ -489,37 +483,41 @@ internal class DepthAnimHat: AbstractHat {
 }
 
 internal class VanillaHat: AbstractHat {
-    internal TeamHat hat;
+    internal TeamHat inner;
 
     internal static VanillaHat New(TeamsBitmap bitmap, bool update = true) {
         var hat = new TeamHat(0, 0, null);
         HatsOnLevel.AddTeamHat(hat);
 
         return new VanillaHat {
-            update = update,
-            hat = hat,
+            should_update = update,
+            inner = hat,
             teamsBitmap = bitmap,
             sprite = HatSprite.New(),
         };
+    }
+
+    internal override void FillFromLua(Table table) {
+        teamsBitmap = table.Get(nameof(AbstractHat.teamsBitmap)).ToObject<TeamsBitmap>();
+        sprite = table.Get(nameof(AbstractHat.sprite)).ToObject<HatSprite>();
     }
 
     internal override void Draw(GameTime gameTime) {
 
     }
 
-
     internal override void OnRemove() {
-        Level.Remove(hat);
+        Level.Remove(inner);
     }
 
     internal override void Update(GameTime gameTime) {
-        hat.strappedOn = strappedOn;
+        inner.strappedOn = strappedOn;
         sprite.update(gameTime);
         var currentFrame = sprite.CurrentFrame;
         //TODO: frames mighit not exist
         var teamFrame = teamsBitmap.frames[currentFrame.value].teamHandles;
         var teamData = TeamsStorage.GetTeamData(teamFrame[0]);
-        teamData.IfSome((data) => hat.team = data.team);
+        teamData.IfSome((data) => inner.team = data.team);
     }
 }
 
@@ -831,7 +829,7 @@ internal class ParticleHat : AbstractHat {
             teamsBitmap = teams,
             phantomDuck = null,
             particleHat = particleHat,
-            update = update,
+            should_update = update,
             runner = new CoroutineRunner(),
             rock=rock,
         };
@@ -909,7 +907,7 @@ internal class ParticleHat : AbstractHat {
         phantomDuck.Unequip(hat);
         Level.Remove(hat);
         yield return null;
-        particleHat.hat._equippedDuck = phantomDuck;
+        particleHat.inner._equippedDuck = phantomDuck;
         //phantomDuck.Equip(particleHat.hat, false);
         yield return null;
         CookSilent(phantomDuck);
@@ -967,7 +965,7 @@ internal class ParticleHat : AbstractHat {
                 //phantomDuck._trappedInstance._destroyed = true;
             }
             particleHat.position = Mouse.positionScreen;
-            phantomDuck.Equip(particleHat.hat, false);
+            phantomDuck.Equip(particleHat.inner, false);
             //phantomDuck.position = Mouse.positionScreen;
             phantomDuck.invincible = true;
             phantomDuck.solid = false;
@@ -985,32 +983,14 @@ internal class WearableHat : AbstractHat {
     internal OneOf<VanillaHat, (DepthAnimHat, VanillaHat)> innerHat;
     internal Option<VanillaHat> emptyHat;
     internal WearableHatData hatData;
-    internal Option<DynValue> luaState;
-    internal Option<Script> scriptOpt;
-    internal List<ParticleHat> particleHats;
-    internal TeamsBitmap particleTeams;
+    internal Option<DynValue> luaHat;
 
-    void TryCall(string functionName, params object[] args) {
-        try {
-
-            if (luaState.ValueUnsafe() is var state && luaState.IsSome) {
-                var functionTable = state.Table.Get(functionName);
-                if (functionTable.Function is var fn && fn is not null) {
-                    fn.Call(args);
-                }
-            }
-        }
-        catch (ScriptRuntimeException e) {
-            LuaLogger.Log($"Error: {e.DecoratedMessage ?? e.Message}");
-        }
-    }
-    
     //shouldn't the hat recieve only data and create bitmap by itself?
     //Upd: no, I *am* supposed to provide the png myself. The path inside data is for the higher level code to load bitmaps, not for the hat itself.
     //Reason? Well, for starters, the hat might be zipped.
     //also: aseprite support
     //script is also optional, btw
-    internal static WearableHat New(TeamsBitmap bitmap, WearableHatData data, Option<List<Animation>> anims, Option<(Script, DynValue)> script) {
+    internal static WearableHat New(TeamsBitmap bitmap, WearableHatData data, Option<List<Animation>> anims, Option<LuaScript> scriptData) {
         var animations = anims.ValueOr(data.animations);
 
         OneOf<VanillaHat, (DepthAnimHat, VanillaHat)> hat;
@@ -1024,7 +1004,7 @@ internal class WearableHat : AbstractHat {
             var vanillaHat = VanillaHat.New(bitmap);
             vanillaHat.strappedOn = data.strappedOn;
             vanillaHat.sprite = sprite;
-            Ducks.mainDuck.Equip(((VanillaHat)vanillaHat).hat, false);
+            Ducks.mainDuck.Equip(((VanillaHat)vanillaHat).inner, false);
             HatsOnLevel.Add(vanillaHat);
             hat = vanillaHat;
         } else {
@@ -1040,56 +1020,76 @@ internal class WearableHat : AbstractHat {
             HatsOnLevel.Add(emptyHat);
 
             emptyHat.strappedOn = true;
-            Ducks.mainDuck.Equip(emptyHat.hat, false);
+            Ducks.mainDuck.Equip(emptyHat.inner, false);
 
             hat = (depthAnimHat, emptyHat);
         }
 
-        var regularBitmap = BitmapUtils.Load(HatsPlusPlus2.GetPathFixed("particles.aseprite")).Unwrap();
-        var regularTeams = TeamsStorage.LoadTeams(regularBitmap.Item1, None, Constants.MAX_TEAM_SIZE, ChopMode.Simple).Unwrap();
+        if (scriptData.IsSome && scriptData.ValueUnsafe() is var script) {
+            script.Spawn();
+        }
 
-        return new WearableHat {
+        var wearable = new WearableHat {
             hatData = data,
-            scriptOpt = script.Map((s) => s.Item1),
-            luaState = script.Map((s) => s.Item2),
+            scriptData = scriptData,
             sprite = sprite,
             innerHat = hat,
-            particleHats = [],
-            particleTeams = regularTeams,
         };
-    }
 
-    internal void AddParticleHat() {
-        var particleHat = ParticleHat.New(particleTeams, false);
-        particleHat.sprite.forceCurrentFrame = 0;
-        particleHats.Add(particleHat);
-        HatsOnLevel.Add(particleHat);
+        if (scriptData.IsSome && scriptData.ValueUnsafe() is var script1) {
+            wearable.luaHat = wearable.innerHat.Match(
+                (hat) => {
+                    return DynValue.FromObject(script1, hat);
+                },
+                (hats) => {
+                    return DynValue.FromObject(script1, hats.Item1);
+                }
+            );
+        }
+        return wearable;
     }
 
     internal override void Draw(GameTime gameTime) {
-        ImGui.Begin("help me");
-        ImGui.End();
+        if (scriptData.ValueUnsafe() is var script && scriptData.IsSome) {
+            script.ProtectedCall("draw");
+        }
+    }
+
+    internal override void OnPressQuack() {
+        sprite.setAnim(AnimTypes.OnPressQuack);
+    }
+
+    internal override void OnReleaseQuack() {
+        sprite.setAnim(AnimTypes.OnReleaseQuack);
     }
 
     internal override void OnRemove() {
     }
 
     internal override void Update(GameTime gameTime) {
-        var offset = 0;
-        foreach (var particleHat in particleHats) {
-            offset += 8;
-            particleHat.position = Mouse.positionScreen;
-            particleHat.position.x += offset;
-        //if (Keyboard.Pressed(Keys.J)) {
-            particleHat.Emit();
-        //}
-            particleHat.Update(gameTime);
-        }
-        if (Keyboard.Pressed(Keys.K)) {
-            AddParticleHat();
-        }
         innerHat.Switch(
-            (hat) => { },
+            (hat) => {
+                if (Ducks.mainDuck.hat == null) {
+                    return;
+                }
+
+                if (scriptData.IsSome && scriptData.ValueUnsafe() is var script) {
+                    LuaUtils.UpdateScriptData(script);
+                    script.Update(gameTime, this.luaHat);
+
+                    innerHat.Match(
+                        (hat) => {
+
+                            return Unit.Default;
+                        },
+                        (hats) => {
+                            hats.Item1.FillFromLua(luaHat.Unwrap().Table);
+                            return Unit.Default;
+                        }
+                    );
+                }
+                hat.Update(gameTime);
+            },
             ((DepthAnimHat depthHat, VanillaHat vanillaHat) args) => {
                 if (Ducks.mainDuck.hat == null) {
                     return;
@@ -1097,24 +1097,21 @@ internal class WearableHat : AbstractHat {
                 var depthHat = args.depthHat;
                 var vanillaHat = args.vanillaHat;
 
-                depthHat.depth = hatData.customDepth ?? vanillaHat.hat.depth.value + 0.05f;
+                depthHat.depth = hatData.customDepth ?? vanillaHat.inner.depth.value + 0.05f;
                 depthHat.flippedHorizontally = Ducks.mainDuck.offDir == -1;
-                depthHat.position = vanillaHat.hat.position;
-                depthHat.angle = vanillaHat.hat.angleDegrees;
+                depthHat.position = vanillaHat.inner.position;
+                depthHat.angle = vanillaHat.inner.angleDegrees;
                 depthHat.sprite.forceCurrentFrame = 0;
 
                 depthHat.Update(gameTime);
             }
         );
-        if (scriptOpt.IsSome && scriptOpt.ValueUnsafe() is var script) {
-            LuaUtils.UpdateScriptData(script);
-            var wearableTable = DynValue.NewTable(script);
-            //wearableTable.Table["sprite"] = hat.sprite;
-            //wearableTable.Table["depth"] = ((VanillaHat)hat).hat.depth.value;
-            //wearableTable.Table["position"] = ((VanillaHat)hat).hat.position;
-
-            TryCall("update", gameTime, wearableTable);
-        }
+        //    var wearableTable = DynValue.NewTable(script);
+        //    //wearableTable.Table["sprite"] = hat.sprite;
+        //    //wearableTable.Table["depth"] = ((VanillaHat)hat).hat.depth.value;
+        //    //wearableTable.Table["position"] = ((VanillaHat)hat).hat.position;
+        //    script.Update(gameTime, wearableTable);
+        //}
     }
 }
 
@@ -1159,7 +1156,7 @@ internal class DepthHat : AbstractHat {
         var (normalIndices, horizontalIndices) = Functions.GetIndices(hatsAmount);
 
         var depthHat = new DepthHat {
-            update = update,
+            should_update = update,
             teamsBitmap = teamsBitmap,
             sprite = HatSprite.New(),
             hats = new(),
@@ -1224,7 +1221,6 @@ internal class DepthHat : AbstractHat {
             case DepthHatState.Depth:
                 switch (State) {
                     case DepthHatState.DepthInactive:
-
                         foreach (var hat in hats) {
                             hat.owner = null;
                             hat.active = false;
@@ -1345,26 +1341,10 @@ internal class DepthHat : AbstractHat {
             for (int y = 0; y < hatsAmount.Y; y++) {
                 var hatIndex = y * hatsAmount.X + x;
                 var hat = hats[hatIndex];
-                hat.angle = Maths.DegToRad(angle);
+                hat.angle = angle;
                 var vecToHat = hat.position - position;
                 var rotationVec = vecToHat.Rotate(hat.angle, Vec2.Zero);
                 hat.position = position + rotationVec;
-                //var myPos = position;
-                //var hatPos = Ducks.MainDuck.hat.position;
-                ////hat.position = positions[hatIndex];
-                //hat.position = hatPos;
-
-                //var posX = Math.Floor(hatPos.x * 8) / 8;
-                //var posY = Math.Floor(hatPos.y * 8) / 8;
-
-                //var diff = Math.Abs(myPos.x - hatPos.x);
-                //if (diff >= 0.0) {
-                //    if (diff > 2.0) {
-                //        var a = 0;
-                //    }
-                //    LuaLogger.Info($"Difference: {Math.Abs(myPos.x - hatPos.x)}");
-                //}
-                //hat.position = new Vec2((float)posX, (float)posY);
             }
         }
 
@@ -1535,52 +1515,6 @@ internal static class HatsOnLevel {
         teamHats.Add(hat);
     }
 
-    //internal static void Update(GameTime gameTime) {
-    //    if (Keyboard.Pressed(Keys.H) && state == 0) {
-    //        foreach (var data in hatsData.Values) {
-    //            var hat = data.hat;
-    //            if (hat is DepthHat depthHat) {
-    //                if (depthHat.State == DepthHatState.DepthInactive) {
-    //                    foreach (var teamHat in depthHat.hats) {
-    //                        if (inactiveHatDepths.Get(teamHat.GetHashCode()).ValueUnsafe() is var rock && rock is not null) {
-    //                            teamHat.active = true;
-    //                            teamHat.owner = rock;
-    //                        }
-    //                    }
-    //                }
-    //            }
-    //        }
-    //        state = 2;
-    //    }
-    //    if (state == 3) {
-    //        foreach (var data in hatsData.Values) {
-    //            var hat = data.hat;
-    //            if (hat is DepthHat depthHat) {
-    //                if (depthHat.State == DepthHatState.DepthInactive) {
-    //                    foreach (var teamHat in depthHat.hats) {
-    //                        if (inactiveHatDepths.Get(teamHat.GetHashCode()).ValueUnsafe() is var rock && rock is not null) {
-    //                            teamHat.owner = null;
-    //                            teamHat.active = false;
-    //                        }
-    //                    }
-    //                }
-    //            }
-    //        }
-    //        state = 0;
-    //    }
-    //    if (state == 2) {
-    //        state = 3;
-    //    }
-    //    if (state == 0) {
-    //        StartUpdating();
-    //        foreach (var data in hatsData.Values) {
-    //            data.hat.Update(gameTime);
-
-    //        }
-    //        FinishUpdating();
-    //    }
-    //}
-
     internal static void Update(GameTime gameTime) {
         HatsOnLevel.gameTime = gameTime;
         runner.Update((float)gameTime.ElapsedGameTime.TotalSeconds);
@@ -1594,8 +1528,16 @@ internal static class HatsOnLevel {
                     continue;
                 } 
 
-                if (data.hat.update) {
+                if (data.hat.should_update) {
                     data.hat.Update(gameTime);
+                    if (Ducks.mainDuck != null) {
+                        if (Ducks.mainDuck.inputProfile.Pressed("QUACK")) {
+                            data.hat.OnPressQuack();
+                        }
+                        if (Ducks.mainDuck.inputProfile.Released("QUACK")) {
+                            data.hat.OnReleaseQuack();
+                        }
+                    }
                 }
 
             }

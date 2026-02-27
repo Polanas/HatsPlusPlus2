@@ -61,7 +61,8 @@ class ObjectUserdataDescriptor : IUserDataDescriptor {
 }
 
 internal static class LuaUtils {
-    internal static void RegisterTypes(Script script, DataType dataType = DataType.Table) {
+
+    internal static void RegisterTypes(LuaScript script, DataType dataType = DataType.Table) {
         RegisterType<TeamId>(script, dataType);
         RegisterType<TeamGen>(script, dataType);
         RegisterType<TeamHandle>(script, dataType);
@@ -86,6 +87,212 @@ internal static class LuaUtils {
                 value = (int)value.Table.Get("value").Number,
                 delay = value.Table.Get("delay").Type == DataType.Number ? (int)value.Table.Get("delay").Number : None
             };
+        });
+
+
+        RegisterType<DepthHat>(script);
+        converters.SetClrToScriptCustomConversion<DepthHat>((script, hat) => {
+            var hatTable = DynValue.NewTable(script).Table;
+            hatTable[nameof(AbstractHat.position)] = hat.position;
+            hatTable[nameof(AbstractHat.depth)] = hat.depth;
+            hatTable[nameof(AbstractHat.angle)] = hat.angle;
+            hatTable[nameof(AbstractHat.flippedHorizontally)] = hat.flippedHorizontally;
+            hatTable[nameof(AbstractHat.teamsBitmap)] = hat.teamsBitmap;
+            hatTable[nameof(AbstractHat.sprite)] = hat.sprite;
+            hatTable[nameof(AbstractHat.id)] = hat.id;
+
+            static DynValue RemoveFn(ScriptExecutionContext ctx, CallbackArguments args) {
+                var hat = args.GetArray()[0];
+                var id = hat.Table.Get("id").ToObject<HatId>();
+                HatsOnLevel.RemoveById(id);
+                return DynValue.Nil;
+            }
+            static DynValue IsAliveFn(ScriptExecutionContext ctx, CallbackArguments args) {
+                var hat = args.GetArray()[0];
+                var id = hat.Table.Get("id").ToObject<HatId>();
+                return DynValue.NewBoolean(HatsOnLevel.IsAlive(id));
+            }
+            static DynValue SetStateFn(ScriptExecutionContext ctx, CallbackArguments args) {
+                var argsArray = args.GetArray();
+                var hatTable = argsArray[0].Table;
+                var id = hatTable.Get("id").ToObject<HatId>();
+                var state = argsArray[1].Number;
+                if (HatsOnLevel.Get(id).ValueUnsafe() is DepthHat hat && hat is not null) { } else {
+                    return DynValue.Nil;
+                }
+
+                hat.SetState((DepthHatState)(int)state);
+                hatTable["state"] = state;
+                return DynValue.Nil;
+            }
+            static DynValue UpdateFn(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0].Table;
+                var id = hatTable.Get("id").ToObject<HatId>();
+                if (HatsOnLevel.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
+                    return DynValue.Nil;
+                }
+
+                hat.FillFromLua(hatTable);
+                hat.Update(Updater.GameTime());
+
+                return DynValue.Nil;
+            }
+
+            hatTable["isAlive"] = DynValue.NewCallback(IsAliveFn);
+            hatTable["update"] = DynValue.NewCallback(UpdateFn);
+            hatTable["remove"] = DynValue.NewCallback(RemoveFn);
+            hatTable["setState"] = DynValue.NewCallback(SetStateFn);
+            return DynValue.NewTable(hatTable);
+        });
+        RegisterType<DepthAnimHat>(script);
+        converters.SetClrToScriptCustomConversion<DepthAnimHat>((script, hat) => {
+            var hatTable = DynValue.NewTable(script).Table;
+            
+            hatTable[nameof(AbstractHat.position)] = hat.position;
+            hatTable[nameof(AbstractHat.depth)] = hat.depth;
+            hatTable[nameof(AbstractHat.angle)] = hat.angle;
+            hatTable[nameof(AbstractHat.flippedHorizontally)] = hat.flippedHorizontally;
+            hatTable[nameof(AbstractHat.teamsBitmap)] = hat.teamsBitmap;
+            hatTable[nameof(AbstractHat.sprite)] = hat.sprite;
+            hatTable[nameof(AbstractHat.id)] = hat.id;
+
+            static DynValue RemoveFn(ScriptExecutionContext ctx, CallbackArguments args) {
+                var hat = args.GetArray()[0];
+                var id = hat.Table.Get("id").ToObject<HatId>();
+                HatsOnLevel.RemoveById(id);
+                return DynValue.Nil;
+            }
+            static DynValue IsAliveFn(ScriptExecutionContext ctx, CallbackArguments args) {
+                var hat = args.GetArray()[0];
+                var id = hat.Table.Get("id").ToObject<HatId>();
+                return DynValue.Nil;
+            }
+            static DynValue UpdateFn(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0].Table;
+                var id = hatTable.Get("id").ToObject<HatId>();
+                if (HatsOnLevel.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
+                    return DynValue.Nil;
+                }
+
+                hat.FillFromLua(hatTable);
+                hat.Update(Updater.GameTime());
+
+                return DynValue.Nil;
+            }
+
+            hatTable.Set("isAlive", DynValue.NewCallback(IsAliveFn));
+            hatTable.Set("remove", DynValue.NewCallback(RemoveFn));
+            hatTable.Set("update", DynValue.NewCallback(UpdateFn));
+
+            return DynValue.NewTable(hatTable);
+        });
+        RegisterType<VanillaHat>(script);
+        converters.SetClrToScriptCustomConversion<VanillaHat>((script, hat) => { 
+            var hatTable = DynValue.NewTable(script).Table;
+
+            hatTable[nameof(AbstractHat.position)] = hat.inner.position;
+            hatTable[nameof(AbstractHat.angle)] = hat.inner.angle;
+            hatTable[nameof(TeamHat.angleDegrees)] = hat.inner.angleDegrees;
+            hatTable[nameof(AbstractHat.flippedHorizontally)] = hat.flippedHorizontally;
+            hatTable[nameof(AbstractHat.teamsBitmap)] = hat.teamsBitmap;
+            hatTable[nameof(AbstractHat.sprite)] = hat.sprite;
+            hatTable[nameof(AbstractHat.id)] = hat.id;
+            hatTable[nameof(TeamHat.strappedOn)] = hat.strappedOn;
+
+            static DynValue Remove(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0];
+                return DynValue.Nil;
+            }
+            static DynValue IsAlive(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0];
+                return DynValue.Nil;
+            }
+            static DynValue Equip(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0];
+                var duck = args.GetArray()[1].Table.Get("objectUserData").UserData.Object as Duck;
+                return DynValue.Nil;
+            }
+            static DynValue Unequip(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0];
+                return DynValue.Nil;
+            }
+            static DynValue Update(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0].Table;
+                var id = hatTable.Get("id").ToObject<HatId>();
+                if (HatsOnLevel.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
+                    return DynValue.Nil;
+                }
+
+                hat.FillFromLua(hatTable);
+                hat.Update(Updater.GameTime());
+
+                return DynValue.Nil;
+            }
+            
+            static DynValue SetAngle(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0].Table;
+                var id = hatTable.Get("id").ToObject<HatId>();
+                if (HatsOnLevel.Get(id).ValueUnsafe() is VanillaHat hat && hat is not null) { } else {
+                    return DynValue.Nil;
+                }
+                var angle = args.GetArray()[1].Number;
+
+                hatTable[nameof(TeamHat.angle)] = angle;
+                return DynValue.Nil;
+            }
+
+            static DynValue GetAngle(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0].Table;
+                var id = hatTable.Get("id").ToObject<HatId>();
+                if (HatsOnLevel.Get(id).ValueUnsafe() is VanillaHat hat && hat is not null) { } else {
+                    return DynValue.Nil;
+                }
+                return DynValue.NewNumber(hat.inner.angle);
+            }
+
+            static DynValue SetPosition(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0].Table;
+                var id = hatTable.Get("id").ToObject<HatId>();
+                if (HatsOnLevel.Get(id).ValueUnsafe() is VanillaHat hat && hat is not null) { } else {
+                    return DynValue.Nil;
+                }
+                var position = args.GetArray()[1].ToObject<Vec2>();
+
+                hat.inner.position = position;
+                return DynValue.Nil;
+            }
+
+            static DynValue GetPosition(ScriptExecutionContext ctx, CallbackArguments args) {
+                var script = ctx.GetScript();
+                var hatTable = args.GetArray()[0].Table;
+                var id = hatTable.Get("id").ToObject<HatId>();
+                if (HatsOnLevel.Get(id).ValueUnsafe() is VanillaHat hat && hat is not null) { } else {
+                    return DynValue.Nil;
+                }
+                return DynValue.FromObject(script, hat.inner.position);
+            }
+
+            hatTable["update"] = DynValue.NewCallback(Update);
+            hatTable["equip"] = DynValue.NewCallback(Equip);
+            hatTable["unequip"] = DynValue.NewCallback(Unequip);
+            hatTable["isAlive"] = DynValue.NewCallback(IsAlive);
+            hatTable["remove"] = DynValue.NewCallback(Remove);
+            hatTable["getAngle"] = DynValue.NewCallback(GetAngle);
+            hatTable["setAngle"] = DynValue.NewCallback(SetAngle);
+            hatTable["getPosition"] = DynValue.NewCallback(GetPosition);
+            hatTable["setPosition"] = DynValue.NewCallback(SetPosition);
+
+            return DynValue.NewTable(hatTable);
         });
     }
 
@@ -608,9 +815,11 @@ internal static class LuaUtils {
         RegisterOption<Vec3>(script);
     }
 
-    internal static void LoadApi(Script script) {
+    internal static void LoadApi(LuaScript script) {
         var converters = Script.GlobalOptions.CustomConverters;
-        (script.Options.ScriptLoader as ScriptLoaderBase).ModulePaths = [Path.Combine(Mod.GetPath<HatsPlusPlus2>("LuaScripts"), "?.lua")];
+        (script.value.Options.ScriptLoader as ScriptLoaderBase).ModulePaths = [
+            Path.Combine(HatsPlusPlus2.GetPathFixed("LuaScripts"), "?.lua").Replace("\\", "/")];
+        (script.value.Options.ScriptLoader as ScriptLoaderBase).IgnoreLuaPathGlobal = true;
         OverridePrint(script);
         RegisterTypes(script);
         LoadMaths(script);
@@ -627,7 +836,12 @@ internal static class LuaUtils {
             table.Table["total"] = (float)gameTime.TotalGameTime.TotalSeconds;
             return table;
         });
-        script.DoFile(Mod.GetPath<HatsPlusPlus2>(Path.Combine("LuaScripts", "main.lua")));
+        var path2 = HatsPlusPlus2.GetPathFixed(Path.Combine("LuaScripts", "main.lua"));
+        try {
+        script.value.DoFile(path2);
+        } catch (ScriptRuntimeException e) {
+            throw;
+        }
     }
 
     internal static void LoadImgui(Script script) {
@@ -653,54 +867,7 @@ internal static class LuaUtils {
     }
 
     internal static void LoadHatFunctions(Script script) {
-        script.Globals["vanillaHat"] = (TeamsBitmap teamsBitmap) => {
-            var hatTable = DynValue.NewTable(script);
-            var vanillaHat = (VanillaHat)HatsOnLevel.Add(VanillaHat.New(teamsBitmap));
-
-            hatTable.Table["sprite"] = vanillaHat.sprite;
-            hatTable.Table["id"] = vanillaHat.id;
-            hatTable.Table["teamsBitmap"] = teamsBitmap;
-
-            hatTable.Table["getPosition"] = () => {
-                return vanillaHat.hat.position;
-            };
-            hatTable.Table["setPosition"] = (Vec2 pos) => {
-                vanillaHat.hat.position = pos;
-            };
-            hatTable.Table["getAngle"] = () => {
-                return vanillaHat.hat.angleDegrees;
-            };
-            hatTable.Table["setAngle"] = (float angle) => {
-                vanillaHat.hat.angleDegrees = angle;
-            };
-            hatTable.Table["getFlippedHorizontally"] = () => {
-                return vanillaHat.hat.flipHorizontal;
-            };
-            hatTable.Table["setFlippedHorizontally"] = (bool flip) => {
-                vanillaHat.hat.flipHorizontal = flip;
-            };
-            hatTable.Table["setStrappedOn"] = (bool value) => {
-                vanillaHat.hat.strappedOn = value;
-            };
-            hatTable.Table["getStrappedOn"] = () => {
-                return vanillaHat.hat.strappedOn;
-            };
-            hatTable.Table["equip"] = (DynValue value) => {
-                var duck = (Duck)value.Table.Get("objectUserData").UserData.Object;
-                duck.Equip(vanillaHat.hat, false);
-            };
-            hatTable.Table["unequip"] = () => {
-                vanillaHat.hat.UnEquip();
-            };
-            hatTable.Table["isAlive"] = () => {
-                return vanillaHat.IsAlive();
-            };
-            hatTable.Table["remove"] = () => {
-                HatsOnLevel.Remove(vanillaHat);
-            };
-            return hatTable;
-        };
-        script.Globals["loadTeams"] = (string path, Option<IVector2> frameSize, Option<IVector2> partSize) => {
+        script.Globals["teamsBitmap"] = (string path, Option<IVector2> frameSize, Option<IVector2> partSize) => {
             var result = TeamsStorage.LoadTeams(path, frameSize, partSize);
             return result.MatchRet(
                 (bitmap) => DynValue.FromObject(script, bitmap),
@@ -717,109 +884,18 @@ internal static class LuaUtils {
             return Animation.New(name, delay, looping, frames);
         };
 
+        script.Globals["vanillaHat"] = (TeamsBitmap teamsBitmap) => {
+            var hat = HatsOnLevel.Add(VanillaHat.New(teamsBitmap));
+            return DynValue.FromObject(script, hat);
+        };
         script.Globals["depthHat"] = (TeamsBitmap teamsBitmap) => {
-            static DynValue RemoveFn(ScriptExecutionContext ctx, CallbackArguments args) {
-                var hat = args.GetArray()[0];
-                var id = hat.Table.Get("id").ToObject<HatId>();
-                HatsOnLevel.RemoveById(id);
-                return DynValue.Nil;
-            }
-            static DynValue IsAliveFn(ScriptExecutionContext ctx, CallbackArguments args) {
-                var hat = args.GetArray()[0];
-                var id = hat.Table.Get("id").ToObject<HatId>();
-                return DynValue.Nil;
-            }
-            static DynValue SetStateFn(ScriptExecutionContext ctx, CallbackArguments args) {
-                var argsArray = args.GetArray();
-                var hatTable = argsArray[0].Table;
-                var state = argsArray[1].Number;
-                hatTable["state"] = state;
-                return DynValue.Nil;
-            }
-            static DynValue UpdateFn(ScriptExecutionContext ctx, CallbackArguments args) {
-                var script = ctx.GetScript();
-                var hatTable = args.GetArray()[0];
-                var id = hatTable.Table.Get("id").ToObject<HatId>();
-                if (HatsOnLevel.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
-                    return DynValue.Nil;
-                }
-
-                //if (!(hat as DepthHat).Ready) {
-                //    return DynValue.Nil;
-                //}
-
-                var state = hatTable.Table.Get("state");
-                (hat as DepthHat).SetState(state.Type == DataType.Number ? (DepthHatState)state.Number : DepthHatState.Regular);
-                hat.position = hatTable.Table.Get("position").ToObject<Vec2>();
-                hat.depth = (float)hatTable.Table.Get("depth").Number;
-                hat.angle = (float)hatTable.Table.Get("angle").Number;
-                hat.flippedHorizontally = hatTable.Table.Get("flippedHorizontally").Boolean;
-                hat.teamsBitmap = hatTable.Table.Get("teamsBitmap").ToObject<TeamsBitmap>();
-                hat.sprite = hatTable.Table.Get("sprite").ToObject<HatSprite>();
-
-                return DynValue.Nil;
-            }
-            var hat = HatsOnLevel.Add(DepthHat.New(teamsBitmap, None, true));
-            var hatTable = DynValue.NewTable(script).Table;
-
-            hatTable.Set("position", DynValue.FromObject(script, hat.position));
-            hatTable.Set("depth", DynValue.NewNumber(hat.depth));
-            hatTable.Set("angle", DynValue.NewNumber(hat.angle));
-            hatTable.Set("flippedHorizontally", DynValue.NewBoolean(hat.flippedHorizontally));
-            hatTable.Set("teamsBitmap", DynValue.FromObject(script, teamsBitmap));
-            hatTable.Set("sprite", DynValue.FromObject(script, hat.sprite));
-            hatTable.Set("id", DynValue.FromObject(script, hat.id));
-
-            hatTable.Set("isAlive", DynValue.NewCallback(IsAliveFn));
-            hatTable.Set("remove", DynValue.NewCallback(RemoveFn));
-            hatTable.Set("update", DynValue.NewCallback(UpdateFn));
-            hatTable.Set("setState", DynValue.NewCallback(SetStateFn));
-            return hatTable;
+            var hat = HatsOnLevel.Add(DepthHat.New(teamsBitmap, None, false));
+            return DynValue.FromObject(script, hat);
         };
 
         script.Globals["depthAnimHat"] = (TeamsBitmap bitmap) => {
-            var hat = HatsOnLevel.Add(DepthAnimHat.New(bitmap, None, true));
-            var hatTable = DynValue.NewTable(script).Table;
-            static DynValue RemoveFn(ScriptExecutionContext ctx, CallbackArguments args) {
-                var hat = args.GetArray()[0];
-                var id = hat.Table.Get("id").ToObject<HatId>();
-                HatsOnLevel.RemoveById(id);
-                return DynValue.Nil;
-            }
-            static DynValue IsAliveFn(ScriptExecutionContext ctx, CallbackArguments args) {
-                var hat = args.GetArray()[0];
-                var id = hat.Table.Get("id").ToObject<HatId>();
-                return DynValue.Nil;
-            }
-            static DynValue UpdateFn(ScriptExecutionContext ctx, CallbackArguments args) {
-                var script = ctx.GetScript();
-                var hatTable = args.GetArray()[0];
-                var id = hatTable.Table.Get("id").ToObject<HatId>();
-                if (HatsOnLevel.Get(id).ValueUnsafe() is var hat && hat is not null) { } else {
-                    return DynValue.Nil;
-                }
-
-                hat.position = hatTable.Table.Get("position").ToObject<Vec2>();
-                hat.depth = (float)hatTable.Table.Get("depth").Number;
-                hat.angle = (float)hatTable.Table.Get("angle").Number;
-                hat.flippedHorizontally = hatTable.Table.Get("flippedHorizontally").Boolean;
-                hat.teamsBitmap = hatTable.Table.Get("teamsBitmap").ToObject<TeamsBitmap>();
-                hat.sprite = hatTable.Table.Get("sprite").ToObject<HatSprite>();
-
-                return DynValue.Nil;
-            }
-            hatTable.Set("position", DynValue.FromObject(script, hat.position));
-            hatTable.Set("depth", DynValue.NewNumber(hat.depth));
-            hatTable.Set("angle", DynValue.NewNumber(hat.angle));
-            hatTable.Set("flippedHorizontally", DynValue.NewBoolean(hat.flippedHorizontally));
-            hatTable.Set("teamsBitmap", DynValue.FromObject(script, bitmap));
-            hatTable.Set("sprite", DynValue.FromObject(script, hat.sprite));
-            hatTable.Set("id", DynValue.FromObject(script, hat.id));
-
-            hatTable.Set("isAlive", DynValue.NewCallback(IsAliveFn));
-            hatTable.Set("remove", DynValue.NewCallback(RemoveFn));
-            hatTable.Set("update", DynValue.NewCallback(UpdateFn));
-            return hatTable;
+            var hat = HatsOnLevel.Add(DepthAnimHat.New(bitmap, None, false));
+            return DynValue.FromObject(script, hat);
         };
     }
 
@@ -876,6 +952,8 @@ internal static class LuaUtils {
         LuaUtils.UpdateDucks(script);
         LuaUtils.UpdateLevel(script);
         LuaUtils.UpdateMouse(script);
+
+        script.Globals["deltaTime"] = Updater.GameTime().ElapsedGameTime.TotalSeconds;
     }
 
     internal static void UpdateMouse(Script script) {

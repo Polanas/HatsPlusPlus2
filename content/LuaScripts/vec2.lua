@@ -157,9 +157,12 @@ local metatable = {
             return vec2(a[1] * b[1], a[2] * b[2])
         end
     end,
+    --TODO: finish vec operations
     __div = function(a, b)
         if type(a) == "number" then
             return vec2(a / b[1], a / b[2])
+        elseif type(b) == "number" then
+            return vec2(a[1] / b, a[2] / b)
         else
             return vec2(a[1] / b[1], a[2] / b[2])
         end

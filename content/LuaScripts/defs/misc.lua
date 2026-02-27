@@ -1,0 +1,5 @@
+---@meta
+
+---@class gameTime
+---  @field delta number
+---  @field total number

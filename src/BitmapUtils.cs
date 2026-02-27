@@ -19,7 +19,7 @@ internal static class BitmapUtils {
             case ".aseprite":
                 AsepriteFile aseprite;
                 try {
-                aseprite = AsepriteFileLoader.FromFile(path);
+                    aseprite = AsepriteFileLoader.FromFile(path);
                 } catch (Exception e) {
                     return Err<(Bitmap, Option<AsepriteData>)>($"could not load aseprite file: {e.ToString()}");
                 }

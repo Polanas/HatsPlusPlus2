@@ -45,6 +45,7 @@ internal class HatSprite
 
     [MoonSharpVisible(false)]
     public static HatSprite New(List<Animation> anims = null) {
+        //TODO: remove repeated animations
         return new HatSprite {
             anims = anims == null ? [] : anims.ToDictionary((a => a.name)),
             lastForceCurrentFrame = Some(-1),

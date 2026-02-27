@@ -1,0 +1,25 @@
+{
+    "name": "Niko",
+    "elements": [
+        {
+            "Preview": {
+                "base": {
+                    "hat_type": "Preview",
+                    "frame_size": [32,32],
+                    "local_image_path": "preview.aseprite"
+                }
+            }
+        },
+        {
+            "Wearable": {
+                "base": {
+                    "hat_type": "Wearable",
+                    "frame_size": [32,32],
+                    "local_image_path": "wearable.aseprite",
+                    "local_script_path": "niko.lua"
+                },
+                "strapped_on": true
+            }
+        }
+    ]
+}

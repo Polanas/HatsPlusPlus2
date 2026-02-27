@@ -26,8 +26,6 @@ function State.init()
     MouthHat.sprite:setAnim("normal")
     ---@type depthHat[]
     EyeHats = {}
-    print("hi")
-    print("depth hat")
     for i = 1,2 do
         EyeHats[i] = depthHat(EyeTeams --[[@as teamsBitmap]])
         EyeHats[i].sprite.forceCurrentFrame = 0

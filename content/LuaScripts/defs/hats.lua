@@ -69,7 +69,7 @@ end
 ---@field angle number
 ---@field sprite hatSprite
 ---@field depth number
----@field fippedHorizontally boolean
+---@field flippedHorizontally boolean
 ---@field teamsBitmap teamsBitmap
 ---@field id hatId
 local depthAnimHatClass = {}
@@ -87,7 +87,7 @@ end
 ---@class vanillaHat
 ---@field teamsBitmap teamsBitmap
 ---@field sprite hatSprite
----@field id hatId
+---@field id hatId const TODO: make it a method 
 local vanillaHatClass = {}
 
 ---@return boolean
@@ -97,8 +97,7 @@ end
 function vanillaHatClass:remove()
 end
 
----@return number
-function vanillaHatClass:getAngle()
+function vanillaHatClass:update()
 end
 
 ---@param duck duck
@@ -112,12 +111,16 @@ end
 function vanillaHatClass:setAngle(angle)
 end
 
----@return boolean
-function vanillaHatClass:getFlippedHorizontally()
+---@return number angle
+function vanillaHatClass:getAngle()
 end
 
----@param value boolean
-function vanillaHatClass:setFlippedHorizontally(value)
+---@param position vec2
+function vanillaHatClass:setPosition(position)
+end
+
+---@return vec2 position
+function vanillaHatClass:getPosition()
 end
 
 ---@class depthHat
@@ -125,7 +128,7 @@ end
 ---@field angle number
 ---@field sprite hatSprite
 ---@field depth number
----@field fippedHorizontally boolean
+---@field flippedHorizontally boolean
 ---@field teamsBitmap teamsBitmap
 ---@field id hatId
 local depthHatClass = {}
@@ -162,12 +165,10 @@ end
 ---@field frames teamFrame[]
 ---@field frameSize vec2
 
----Loads and sends teams from an image (.png or .aseprite)
 ---@param path string
----@param frameSize vec2? default: size of the whole image
----@param partSize vec2? default: 32x32
----@return teamsBitmap?
-function loadTeams(path, frameSize, partSize)
+---@param frameSize vec2
+---@return teamsBitmap
+function teamsBitmap(path, frameSize)
 end
 
 ---@return animation
